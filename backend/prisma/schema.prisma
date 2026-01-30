@@ -1,0 +1,299 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  role         UserRole @default(PATIENT)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  patients       Patient[]
+  providers      Provider[]
+  payments       Payment[]
+  cryptoPayments CryptoPayment[]
+  refunds        Refund[]
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  PATIENT
+  PROVIDER
+  ADMIN
+}
+
+// Healthcare Facilities
+model Facility {
+  id        String       @id @default(uuid())
+  name      String
+  address   String
+  city      String
+  state     String
+  zipCode   String       @map("zip_code")
+  phone     String
+  email     String
+  type      FacilityType
+  isActive  Boolean      @default(true) @map("is_active")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  patients       Patient[]
+  payments       Payment[]
+  cryptoPayments CryptoPayment[]
+  providers      Provider[]
+
+  @@map("facilities")
+}
+
+enum FacilityType {
+  HOSPITAL
+  CLINIC
+  LABORATORY
+  IMAGING_CENTER
+}
+
+// Patient Management
+model Patient {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  firstName   String   @map("first_name")
+  lastName    String   @map("last_name")
+  dateOfBirth DateTime @map("date_of_birth") @db.Date
+  phone       String?
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?  @map("zip_code")
+  email       String?
+  ssn         String?  @map("ssn") // Encrypted
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  facility       Facility        @relation(fields: [facilityId], references: [id])
+  facilityId     String          @map("facility_id")
+  payments       Payment[]
+  cryptoPayments CryptoPayment[]
+  medicalRecords MedicalRecord[]
+
+  @@map("patients")
+}
+
+// Provider Management
+model Provider {
+  id         String   @id @default(uuid())
+  userId     String   @unique @map("user_id")
+  npiNumber  String   @unique @map("npi_number")
+  firstName  String   @map("first_name")
+  lastName   String   @map("last_name")
+  specialty  String
+  phone      String
+  email      String
+  facilityId String   @map("facility_id")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  facility       Facility        @relation(fields: [facilityId], references: [id])
+  payments       Payment[]
+  medicalRecords MedicalRecord[]
+
+  @@map("providers")
+}
+
+// Payment Processing
+model Payment {
+  id            String        @id @default(uuid())
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("USD")
+  paymentMethod PaymentMethod @map("payment_method")
+  status        PaymentStatus @default(PENDING)
+  description   String
+  transactionId String?       @map("transaction_id")
+  patientId     String        @map("patient_id")
+  facilityId    String        @map("facility_id")
+  providerId    String?       @map("provider_id")
+  createdBy     String        @map("created_by")
+  // Debit card specific fields
+  isDebitCard   Boolean       @default(false) @map("is_debit_card")
+  pinVerified   Boolean       @default(false) @map("pin_verified")
+  balanceCheck  DateTime?     @map("balance_check")
+  hsaFsaType    String?       @map("hsa_fsa_type") // HSA, FSA, null
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  patient  Patient   @relation(fields: [patientId], references: [id])
+  facility Facility  @relation(fields: [facilityId], references: [id])
+  user     User      @relation(fields: [createdBy], references: [id])
+  provider Provider? @relation(fields: [providerId], references: [id])
+  refunds  Refund[]
+
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  CRYPTO
+  ACH
+  HSA_CARD // Health Savings Account
+  FSA_CARD // Flexible Spending Account
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+// Cryptocurrency Payments
+model CryptoPayment {
+  id              String              @id @default(uuid())
+  amount          Decimal             @db.Decimal(10, 2)
+  cryptocurrency  Cryptocurrency
+  walletAddress   String              @map("wallet_address")
+  paymentAddress  String?             @map("payment_address")
+  status          CryptoPaymentStatus @default(PENDING)
+  transactionHash String?             @map("transaction_hash")
+  confirmations   Int                 @default(0)
+  patientId       String              @map("patient_id")
+  facilityId      String              @map("facility_id")
+  createdBy       String              @map("created_by")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  patient  Patient  @relation(fields: [patientId], references: [id])
+  facility Facility @relation(fields: [facilityId], references: [id])
+  user     User     @relation(fields: [createdBy], references: [id])
+
+  @@map("crypto_payments")
+}
+
+enum Cryptocurrency {
+  SOL
+  ETH
+  MATIC
+  USDC
+}
+
+enum CryptoPaymentStatus {
+  PENDING
+  CONFIRMING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// Refund Management
+model Refund {
+  id          String       @id @default(uuid())
+  paymentId   String       @map("payment_id")
+  amount      Decimal      @db.Decimal(10, 2)
+  reason      String
+  status      RefundStatus @default(PENDING)
+  processedBy String       @map("processed_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  payment Payment @relation(fields: [paymentId], references: [id])
+  user    User    @relation(fields: [processedBy], references: [id])
+
+  @@map("refunds")
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// Medical Records
+model MedicalRecord {
+  id          String   @id @default(uuid())
+  patientId   String   @map("patient_id")
+  providerId  String   @map("provider_id")
+  recordType  String   @map("record_type")
+  diagnosis   String?
+  treatment   String?
+  notes       String?
+  dateOfVisit DateTime @map("date_of_visit") @db.Date
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  patient  Patient  @relation(fields: [patientId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id])
+
+  @@map("medical_records")
+}
+
+// Audit Logging
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String
+  resource   String
+  resourceId String?  @map("resource_id")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  details    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// System Configuration
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_config")
+}
+
+// API Keys for external services
+model ApiKey {
+  id          String    @id @default(uuid())
+  serviceName String    @map("service_name")
+  keyHash     String    @map("key_hash")
+  isActive    Boolean   @default(true) @map("is_active")
+  lastUsed    DateTime? @map("last_used")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("api_keys")
+}
