@@ -1,7 +1,9 @@
+import express from "express";
 import { Router } from "express";
 import { z } from "zod";
-import { authController } from "../controllers/auth.controller";
 import { validate } from "../middleware/validate";
+import { authenticateToken } from "../middleware/auth";
+import { authController } from "../controllers/auth.controller";
 
 const router = Router();
 
@@ -33,7 +35,15 @@ const refreshTokenSchema = z.object({
 router.post("/register", validate(registerSchema), authController.register);
 router.post("/login", validate(loginSchema), authController.login);
 router.post("/logout", authController.logout);
-router.post("/refresh", validate(refreshTokenSchema), authController.refreshToken);
-router.get("/profile", authController.getProfile);
+router.post(
+  "/refresh",
+  validate(refreshTokenSchema),
+  authController.refreshToken,
+);
+router.get(
+  "/profile",
+  authenticateToken,
+  authController.getCurrentUser.bind(authController),
+);
 
 export { router as authRoutes };

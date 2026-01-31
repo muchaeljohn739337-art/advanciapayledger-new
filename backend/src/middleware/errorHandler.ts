@@ -5,8 +5,8 @@ export const errorHandler = (
   error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
-) => {
+  next: NextFunction,
+): void => {
   logger.error("Error occurred:", {
     error: error.message,
     stack: error.stack,
@@ -18,32 +18,36 @@ export const errorHandler = (
 
   // Prisma errors
   if (error.name === "PrismaClientKnownRequestError") {
-    return res.status(400).json({
+    res.status(400).json({
       error: "Database operation failed",
       message: "Invalid data provided",
     });
+    return;
   }
 
   // Validation errors
   if (error.name === "ValidationError") {
-    return res.status(400).json({
+    res.status(400).json({
       error: "Validation failed",
       message: error.message,
     });
+    return;
   }
 
   // JWT errors
   if (error.name === "JsonWebTokenError") {
-    return res.status(401).json({
+    res.status(401).json({
       error: "Invalid authentication token",
     });
+    return;
   }
 
   // Default error
   const statusCode = (error as any).statusCode || 500;
-  const message = process.env.NODE_ENV === "production" 
-    ? "Internal server error" 
-    : error.message;
+  const message =
+    process.env.NODE_ENV === "production"
+      ? "Internal server error"
+      : error.message;
 
   res.status(statusCode).json({
     error: "An error occurred",

@@ -4,12 +4,17 @@ import { prisma } from "../utils/prisma";
 import { hashPassword, comparePassword } from "../utils/encryption";
 import { redis } from "../utils/redis";
 import { logger } from "../utils/logger";
-import { AuthRequest } from "../middleware/auth";
 
 export class AuthController {
   async register(req: Request, res: Response) {
     try {
-      const { email, password, firstName, lastName, role = "PATIENT" } = req.body;
+      const {
+        email,
+        password,
+        firstName,
+        lastName,
+        role = "PATIENT",
+      } = req.body;
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
@@ -46,7 +51,11 @@ export class AuthController {
       const tokens = this.generateTokens(user.id);
 
       // Store refresh token in Redis
-      await redis.setEx(`refresh_token:${user.id}`, 7 * 24 * 60 * 60, tokens.refreshToken);
+      await redis.setEx(
+        `refresh_token:${user.id}`,
+        7 * 24 * 60 * 60,
+        tokens.refreshToken,
+      );
 
       logger.info(`User registered: ${email}`);
 
@@ -83,7 +92,10 @@ export class AuthController {
       }
 
       // Verify password
-      const isValidPassword = await comparePassword(password, user.passwordHash);
+      const isValidPassword = await comparePassword(
+        password,
+        user.passwordHash,
+      );
       if (!isValidPassword) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
@@ -92,7 +104,11 @@ export class AuthController {
       const tokens = this.generateTokens(user.id);
 
       // Store refresh token in Redis
-      await redis.setEx(`refresh_token:${user.id}`, 7 * 24 * 60 * 60, tokens.refreshToken);
+      await redis.setEx(
+        `refresh_token:${user.id}`,
+        7 * 24 * 60 * 60,
+        tokens.refreshToken,
+      );
 
       const { passwordHash, ...userWithoutPassword } = user;
 
@@ -143,7 +159,11 @@ export class AuthController {
       const tokens = this.generateTokens(decoded.userId);
 
       // Update refresh token in Redis
-      await redis.setEx(`refresh_token:${decoded.userId}`, 7 * 24 * 60 * 60, tokens.refreshToken);
+      await redis.setEx(
+        `refresh_token:${decoded.userId}`,
+        7 * 24 * 60 * 60,
+        tokens.refreshToken,
+      );
 
       res.json(tokens);
     } catch (error) {
@@ -152,7 +172,7 @@ export class AuthController {
     }
   }
 
-  async getProfile(req: AuthRequest, res: Response) {
+  async getCurrentUser(req: Request, res: Response) {
     try {
       const user = await prisma.user.findUnique({
         where: { id: req.user!.id },

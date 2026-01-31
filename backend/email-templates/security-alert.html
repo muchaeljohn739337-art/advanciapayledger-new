@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Security Alert - New Login Detected</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; padding: 40px 20px;">
+  
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+    
+    <tr>
+      <td style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px; text-align: center;">
+        <div style="font-size: 60px; margin-bottom: 15px;">🔒</div>
+        <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">
+          Security Alert
+        </h1>
+        <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+          New login to your account
+        </p>
+      </td>
+    </tr>
+    
+    <tr>
+      <td style="padding: 40px;">
+        
+        <p style="margin: 0 0 20px; color: #111827; font-size: 16px; line-height: 1.6;">
+          Hi <strong>{{userName}}</strong>,
+        </p>
+        
+        <p style="margin: 0 0 30px; color: #374151; font-size: 15px; line-height: 1.6;">
+          We detected a new login to your Advancia Pay account. If this was you, no action is needed. If you don't recognize this activity, please secure your account immediately.
+        </p>
+        
+        <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0 0 15px; color: #991b1b; font-weight: bold; font-size: 14px;">
+            LOGIN DETAILS:
+          </p>
+          <table width="100%" style="color: #7f1d1d; font-size: 14px;">
+            <tr>
+              <td style="padding: 5px 0;">📍 Location:</td>
+              <td style="padding: 5px 0; font-weight: 600; text-align: right;">{{location}}</td>
+            </tr>
+            <tr>
+              <td style="padding: 5px 0;">🖥️ Device:</td>
+              <td style="padding: 5px 0; font-weight: 600; text-align: right;">{{device}}</td>
+            </tr>
+            <tr>
+              <td style="padding: 5px 0;">🌐 IP Address:</td>
+              <td style="padding: 5px 0; font-weight: 600; font-family: monospace; text-align: right;">{{ipAddress}}</td>
+            </tr>
+            <tr>
+              <td style="padding: 5px 0;">⏰ Time:</td>
+              <td style="padding: 5px 0; font-weight: 600; text-align: right;">{{timestamp}}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="margin: 30px 0;">
+          <p style="margin: 0 0 15px; color: #374151; font-weight: 600;">
+            This wasn't you?
+          </p>
+          <table cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding-right: 10px;">
+                <a href="{{secureAccountUrl}}" style="display: inline-block; background: #ef4444; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold;">
+                  Secure My Account
+                </a>
+              </td>
+              <td>
+                <a href="{{changePasswordUrl}}" style="display: inline-block; background: #6b7280; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold;">
+                  Change Password
+                </a>
+              </td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-top: 30px;">
+          <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.6;">
+            <strong>Security Tips:</strong><br>
+            • Enable two-factor authentication (2FA)<br>
+            • Use a strong, unique password<br>
+            • Never share your login credentials<br>
+            • Review your active sessions regularly
+          </p>
+        </div>
+        
+      </td>
+    </tr>
+    
+    <tr>
+      <td style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 0; color: #6b7280; font-size: 13px;">
+          If you have questions, contact us at <a href="mailto:security@advanciapayledger.com" style="color: #667eea;">security@advanciapayledger.com</a>
+        </p>
+      </td>
+    </tr>
+    
+  </table>
+  
+</body>
+</html>

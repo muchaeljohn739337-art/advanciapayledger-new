@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Payment Received - ${{amount}}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; padding: 40px 20px;">
+  
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+    
+    <tr>
+      <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px; text-align: center;">
+        <div style="font-size: 60px; margin-bottom: 15px;">✅</div>
+        <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">
+          Payment Received!
+        </h1>
+        <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+          You've successfully received a payment
+        </p>
+      </td>
+    </tr>
+    
+    <tr>
+      <td style="padding: 40px;">
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+          <div style="font-size: 48px; font-weight: bold; color: #10b981; margin-bottom: 10px;">
+            ${{amount}} USD
+          </div>
+          <div style="color: #6b7280; font-size: 14px;">
+            ≈ {{cryptoAmount}} {{cryptoSymbol}} ({{cryptoUSD}})
+          </div>
+        </div>
+        
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; width: 40%;">
+              From
+            </td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; text-align: right;">
+              {{senderName}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
+              Payment Method
+            </td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; text-align: right;">
+              {{paymentMethod}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
+              Transaction ID
+            </td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #111827; font-family: monospace; font-size: 12px; text-align: right;">
+              {{transactionId}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
+              Date & Time
+            </td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; text-align: right;">
+              {{dateTime}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">
+              Status
+            </td>
+            <td style="padding: 12px 0; text-align: right;">
+              <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                ✓ COMPLETED
+              </span>
+            </td>
+          </tr>
+        </table>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="{{transactionUrl}}" style="display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            View Transaction Details →
+          </a>
+        </div>
+        
+        {{#if isCrypto}}
+        <div style="background: #f9fafb; border-radius: 10px; padding: 20px; margin-top: 20px;">
+          <p style="margin: 0 0 10px; color: #374151; font-weight: 600; font-size: 14px;">
+            Blockchain Details:
+          </p>
+          <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.6;">
+            Network: <strong>{{blockchain}}</strong><br>
+            Block: <strong>{{blockNumber}}</strong><br>
+            Gas Used: <strong>{{gasUsed}}</strong><br>
+            <a href="{{explorerUrl}}" style="color: #667eea; text-decoration: none;">View on Explorer →</a>
+          </p>
+        </div>
+        {{/if}}
+        
+      </td>
+    </tr>
+    
+    <tr>
+      <td style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 0; color: #6b7280; font-size: 13px;">
+          This is an automated notification from Advancia Pay
+        </p>
+      </td>
+    </tr>
+    
+  </table>
+  
+</body>
+</html>

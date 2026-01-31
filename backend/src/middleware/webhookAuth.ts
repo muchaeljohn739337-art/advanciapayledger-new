@@ -8,14 +8,13 @@ export const validateWebhookSignature = (
   req: Request,
   res: Response,
   next: NextFunction,
-): void => {
+) => {
   const signature = req.headers["stripe-signature"] as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!signature || !webhookSecret) {
-    return res
-      .status(400)
-      .json({ error: "Missing webhook signature or secret" });
+    res.status(400).json({ error: "Missing webhook signature or secret" });
+    return;
   }
 
   try {
@@ -27,14 +26,13 @@ export const validateWebhookSignature = (
       .digest("hex");
 
     if (signature !== expectedSignature) {
-      return res.status(400).json({ error: "Invalid webhook signature" });
+      res.status(400).json({ error: "Invalid webhook signature" });
+      return;
     }
 
     next();
   } catch (error) {
     console.error("Webhook signature validation error:", error);
-    return res
-      .status(400)
-      .json({ error: "Webhook signature validation failed" });
+    res.status(400).json({ error: "Webhook signature validation failed" });
   }
 };

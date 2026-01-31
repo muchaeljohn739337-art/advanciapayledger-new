@@ -1,0 +1,102 @@
+name: advancia-payledger
+region: nyc
+services:
+  - name: backend
+    github:
+      repo: your-username/advancia-payledger
+      branch: main
+      deploy_on_push: true
+    source_dir: /backend
+    build_command: npm install && npm run build
+    run_command: npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: professional-xs
+    http_port: 3001
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: ${db.DATABASE_URL}
+        type: SECRET
+      - key: REDIS_URL
+        value: ${redis.REDIS_URL}
+        type: SECRET
+      - key: JWT_SECRET
+        value: ${JWT_SECRET}
+        type: SECRET
+      - key: ENCRYPTION_KEY
+        value: ${ENCRYPTION_KEY}
+        type: SECRET
+      - key: SUPABASE_URL
+        value: ${SUPABASE_URL}
+        type: SECRET
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: ${SUPABASE_SERVICE_ROLE_KEY}
+        type: SECRET
+      - key: DO_SPACES_ENDPOINT
+        value: ${DO_SPACES_ENDPOINT}
+      - key: DO_SPACES_KEY
+        value: ${DO_SPACES_KEY}
+        type: SECRET
+      - key: DO_SPACES_SECRET
+        value: ${DO_SPACES_SECRET}
+        type: SECRET
+      - key: DO_SPACES_BUCKET
+        value: ${DO_SPACES_BUCKET}
+      - key: DO_SPACES_REGION
+        value: ${DO_SPACES_REGION}
+      - key: STRIPE_SECRET_KEY
+        value: ${STRIPE_SECRET_KEY}
+        type: SECRET
+      - key: FRONTEND_URL
+        value: ${frontend.PUBLIC_URL}
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+
+  - name: frontend
+    github:
+      repo: your-username/advancia-payledger
+      branch: main
+      deploy_on_push: true
+    source_dir: /frontend
+    build_command: npm install && npm run build
+    run_command: npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: professional-xs
+    http_port: 3000
+    envs:
+      - key: NEXT_PUBLIC_API_URL
+        value: ${backend.PUBLIC_URL}
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: ${NEXT_PUBLIC_SUPABASE_URL}
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        value: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        type: SECRET
+    routes:
+      - path: /
+    health_check:
+      http_path: /
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+
+databases:
+  - name: db
+    engine: PG
+    version: "15"
+    production: true
+    cluster_name: advancia-db-cluster
+
+  - name: redis
+    engine: REDIS
+    version: "7"
+    production: true

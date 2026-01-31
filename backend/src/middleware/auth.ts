@@ -3,15 +3,11 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../utils/prisma";
 import { logger } from "../utils/logger";
 
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-  };
-}
-
-export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
@@ -26,7 +22,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     }
 
     const decoded = jwt.verify(token, jwtSecret) as any;
-    
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, email: true, role: true, isActive: true },
@@ -45,13 +41,15 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
 };
 
 export const requireRole = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: "Authentication required" });
+      res.status(401).json({ error: "Authentication required" });
+      return;
     }
 
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: "Insufficient permissions" });
+      res.status(403).json({ error: "Insufficient permissions" });
+      return;
     }
 
     next();

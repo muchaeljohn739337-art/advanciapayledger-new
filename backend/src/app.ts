@@ -14,7 +14,24 @@ import { analyticsRoutes } from "./routes/analytics";
 import { webhookRoutes } from "./routes/webhooks";
 import { debitCardRoutes } from "./routes/debitCards";
 import { achRoutes } from "./routes/ach";
+import { insightsRoutes } from "./routes/insights";
+import cryptoRoutes from "./routes/cryptoRoutes";
+import receiptRoutes from "./routes/receiptRoutes";
+import auditRoutes from "./routes/auditRoutes";
+import { securityRoutes } from "./routes/security";
+import walletRoutes from "./routes/wallet.secure";
+import chamberRoutes from "./routes/chambers";
+import bookingRoutes from "./routes/bookings";
+import scheduleRoutes from "./routes/schedule";
+import currencyRoutes from "./routes/currency.routes";
 import { rateLimiter } from "./middleware/rateLimiter";
+import {
+  preventSensitiveTableAccess,
+  sanitizeQueries,
+  sensitiveOperationRateLimit,
+  sanitizeResponse,
+  securityHeaders,
+} from "./middleware/security";
 
 dotenv.config();
 
@@ -26,7 +43,14 @@ export const prisma = new PrismaClient({
   log: ["query", "error", "warn"],
 });
 
-// Middleware
+// Security Middleware (applied first)
+app.use(securityHeaders);
+app.use(preventSensitiveTableAccess);
+app.use(sanitizeQueries);
+app.use(sensitiveOperationRateLimit);
+app.use(sanitizeResponse);
+
+// Standard Middleware
 app.use(helmet());
 app.use(
   cors({
@@ -61,6 +85,16 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/debit-cards", debitCardRoutes);
 app.use("/api/ach", achRoutes);
+app.use("/api/insights", insightsRoutes);
+// app.use("/api/receipts", receiptRoutes); // TODO: Fix aws-sdk dependency
+app.use("/api/audit", auditRoutes);
+app.use("/api/security", securityRoutes);
+app.use("/api/crypto", cryptoRoutes);
+// app.use("/api/wallet", walletRoutes); // TODO: Fix wallet.secure.ts schema issues
+app.use("/api/chambers", chamberRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/schedule", scheduleRoutes);
+app.use("/api/currency", currencyRoutes);
 
 // Error handling
 app.use(notFoundHandler);

@@ -12,7 +12,7 @@ export const validate = (schema: Schema) => {
       next();
     } catch (error) {
       const validationError = error as any;
-      return res.status(400).json({
+      res.status(400).json({
         error: "Validation failed",
         message: validationError.errors?.[0]?.message || "Invalid input data",
       });

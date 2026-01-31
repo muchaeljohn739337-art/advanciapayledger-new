@@ -4,13 +4,17 @@ import { logger } from "../utils/logger";
 
 export const createFacility = async (req: Request, res: Response) => {
   try {
-    const { name, type, address, phone, email } = req.body;
+    const { name, type, address, city, state, zipCode, phone, email } =
+      req.body;
 
     const facility = await prisma.facility.create({
       data: {
         name,
         type,
         address,
+        city,
+        state,
+        zipCode,
         phone,
         email,
       },

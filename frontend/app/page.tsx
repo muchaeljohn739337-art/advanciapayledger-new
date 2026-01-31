@@ -1,313 +1,257 @@
-import Link from "next/link";
+"use client"
 
-export default function HomePage() {
+import { useState } from 'react';
+import Link from 'next/link';
+
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-16">
-        {/* Header */}
-        <header className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            Advancia PayLedger
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <span className="text-2xl font-bold text-blue-600">Advancia Pay</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/features" className="text-gray-700 hover:text-blue-600">Features</Link>
+              <Link href="/pricing" className="text-gray-700 hover:text-blue-600">Pricing</Link>
+              <Link href="/login" className="text-gray-700 hover:text-blue-600">Login</Link>
+              <Link href="/register" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                Get Started
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="text-center">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+            Healthcare Payments.<br />
+            <span className="text-blue-600">Crypto & Fiat. Seamless.</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Secure healthcare payment processing platform supporting
-            cryptocurrency and traditional payment methods
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Accept both cryptocurrency and traditional payments. Built for healthcare facilities with HIPAA compliance, real-time processing, and zero complexity.
           </p>
-        </header>
+          <div className="flex justify-center space-x-4">
+            <Link href="/register" className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700">
+              Start Free Trial
+            </Link>
+            <Link href="/demo" className="border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-50">
+              Request Demo
+            </Link>
+          </div>
+        </div>
 
-        {/* Hero Section */}
-        <section className="grid md:grid-cols-2 gap-12 items-center mb-16">
+        {/* Stats */}
+        <div className="mt-20 grid grid-cols-3 gap-8 text-center">
           <div>
-            <h2 className="text-3xl font-semibold text-gray-900 mb-6">
-              Modern Healthcare Payments
-            </h2>
-            <p className="text-gray-600 mb-8">
-              Process payments securely with support for credit cards, debit
-              cards, ACH transfers, and major cryptocurrencies including
-              Bitcoin, Ethereum, and Solana.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-700">HIPAA-compliant security</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-700">Multi-currency support</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-700">Real-time processing</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-700">Comprehensive reporting</span>
-              </div>
-            </div>
+            <div className="text-4xl font-bold text-blue-600">$247K</div>
+            <div className="text-gray-600 mt-2">Monthly Volume</div>
           </div>
-          <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h3 className="text-2xl font-semibold text-gray-900 mb-6">
-              Get Started
-            </h3>
-            <div className="space-y-4">
-              <Link
-                href="/auth/login"
-                className="block w-full bg-blue-600 text-white text-center py-3 px-4 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/auth/register"
-                className="block w-full bg-gray-200 text-gray-800 text-center py-3 px-4 rounded-md hover:bg-gray-300 transition-colors"
-              >
-                Create Account
-              </Link>
-            </div>
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                New to Advancia PayLedger?{" "}
-                <Link href="/docs" className="text-blue-600 hover:underline">
-                  Learn more
-                </Link>
-              </p>
-            </div>
+          <div>
+            <div className="text-4xl font-bold text-blue-600">24</div>
+            <div className="text-gray-600 mt-2">Healthcare Facilities</div>
           </div>
-        </section>
+          <div>
+            <div className="text-4xl font-bold text-blue-600">42%</div>
+            <div className="text-gray-600 mt-2">Month-over-Month Growth</div>
+          </div>
+        </div>
+      </section>
 
-        {/* Enhanced Features Grid */}
-        <section className="grid md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-              <svg
-                className="w-6 h-6 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Analytics Dashboard
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Real-time analytics and reporting for payment trends and revenue
-              insights.
-            </p>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
-            >
-              View Dashboard →
-            </Link>
+      {/* Features Section */}
+      <section className="bg-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-12">Everything You Need</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <FeatureCard
+              icon="💳"
+              title="Multi-Payment Support"
+              description="Accept crypto (SOL, ETH, USDC) and traditional payments (cards, ACH, wire) in one platform"
+            />
+            <FeatureCard
+              icon="🔒"
+              title="HIPAA Compliant"
+              description="Bank-level security with end-to-end encryption and full compliance for healthcare data"
+            />
+            <FeatureCard
+              icon="⚡"
+              title="Instant Settlement"
+              description="Crypto payments settle in seconds. Traditional payments in 1-2 business days"
+            />
+            <FeatureCard
+              icon="📊"
+              title="Real-Time Dashboard"
+              description="Track all transactions, revenue, and analytics in one unified dashboard"
+            />
+            <FeatureCard
+              icon="👥"
+              title="Payroll Management"
+              description="Pay employees in crypto or fiat. Automate payroll with tax calculations"
+            />
+            <FeatureCard
+              icon="🔗"
+              title="Easy Integration"
+              description="Connect existing systems with our REST API. SDKs for all major languages"
+            />
           </div>
+        </div>
+      </section>
 
-          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-              <svg
-                className="w-6 h-6 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Transaction Ledger
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Complete transaction history with advanced filtering and export
-              capabilities.
-            </p>
-            <Link
-              href="/ledger"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
-            >
-              View Ledger →
-            </Link>
+      {/* Pricing Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-12">Simple, Transparent Pricing</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <PricingCard
+              name="Starter"
+              price="$99"
+              period="/ month"
+              features={[
+                'Up to $50K monthly volume',
+                'Crypto + Fiat payments',
+                'HIPAA compliance',
+                'Basic reporting',
+                'Email support',
+              ]}
+            />
+            <PricingCard
+              name="Professional"
+              price="$299"
+              period="/ month"
+              features={[
+                'Up to $500K monthly volume',
+                'All Starter features',
+                'Advanced analytics',
+                'API access',
+                'Priority support',
+                'Custom integrations',
+              ]}
+              highlighted
+            />
+            <PricingCard
+              name="Enterprise"
+              price="Custom"
+              period=""
+              features={[
+                'Unlimited volume',
+                'All Professional features',
+                'Dedicated account manager',
+                'Custom development',
+                'SLA guarantee',
+                'White-label options',
+              ]}
+            />
           </div>
+        </div>
+      </section>
 
-          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-              <svg
-                className="w-6 h-6 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Crypto Vault
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Manage cryptocurrency holdings across multiple blockchain
-              networks.
-            </p>
-            <Link
-              href="/vault"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Manage Vault →
-            </Link>
-          </div>
+      {/* CTA Section */}
+      <section className="bg-blue-600 py-16">
+        <div className="max-w-4xl mx-auto text-center px-4">
+          <h2 className="text-3xl font-bold text-white mb-4">Ready to modernize your payments?</h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Join 24 healthcare facilities already processing $247K monthly
+          </p>
+          <Link href="/register" className="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 inline-block">
+            Start Free Trial →
+          </Link>
+        </div>
+      </section>
 
-          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-              <svg
-                className="w-6 h-6 text-orange-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="font-bold text-lg mb-4">Advancia Pay</h3>
+              <p className="text-gray-400">Healthcare payments reimagined</p>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Payroll Management
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Automated payroll processing with tax calculations and compliance
-              reporting.
-            </p>
-            <Link
-              href="/payroll"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Manage Payroll →
-            </Link>
+            <div>
+              <h4 className="font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/features">Features</Link></li>
+                <li><Link href="/pricing">Pricing</Link></li>
+                <li><Link href="/security">Security</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/about">About</Link></li>
+                <li><Link href="/blog">Blog</Link></li>
+                <li><Link href="/contact">Contact</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/privacy">Privacy</Link></li>
+                <li><Link href="/terms">Terms</Link></li>
+                <li><Link href="/compliance">Compliance</li>
+              </ul>
+            </div>
           </div>
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            © 2026 Advancia Pay Ledger. All rights reserved.
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
 
-          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-              <svg
-                className="w-6 h-6 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Security Center
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Advanced security monitoring with audit logs and threat detection.
-            </p>
-            <Link
-              href="/security"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Security Center →
-            </Link>
-          </div>
+function FeatureCard({ icon, title, description }: { icon: string; title: string; description: string }) {
+  return (
+    <div className="bg-gray-50 p-6 rounded-lg">
+      <div className="text-4xl mb-4">{icon}</div>
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-gray-600">{description}</p>
+    </div>
+  );
+}
 
-          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-              <svg
-                className="w-6 h-6 text-indigo-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              AI Assistant
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Powered by Google Gemini AI for intelligent payment support and
-              insights.
-            </p>
-            <button className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">
-              Launch AI Chat →
-            </button>
-          </div>
-        </section>
-
-        {/* Payment Methods */}
-        <section className="bg-white p-8 rounded-lg shadow-lg mb-16">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
-            Supported Payment Methods
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">💳</span>
-              </div>
-              <p className="text-gray-700 font-medium">Credit Cards</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">💳</span>
-              </div>
-              <p className="text-gray-700 font-medium">Debit Cards</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">₿</span>
-              </div>
-              <p className="text-gray-700 font-medium">Cryptocurrency</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">🏦</span>
-              </div>
-              <p className="text-gray-700 font-medium">ACH Transfers</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="text-center text-gray-600">
-          <p>&copy; 2026 Advancia PayLedger. All rights reserved.</p>
-          <div className="mt-4 space-x-6">
-            <Link href="/privacy" className="hover:text-blue-600">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-blue-600">
-              Terms of Service
-            </Link>
-            <Link href="/support" className="hover:text-blue-600">
-              Support
-            </Link>
-          </div>
-        </footer>
+function PricingCard({
+  name,
+  price,
+  period,
+  features,
+  highlighted = false,
+}: {
+  name: string;
+  price: string;
+  period: string;
+  features: string[];
+  highlighted?: boolean;
+}) {
+  return (
+    <div className={`rounded-lg p-8 ${highlighted ? 'bg-blue-600 text-white transform scale-105' : 'bg-white border-2 border-gray-200'}`}>
+      <h3 className="text-2xl font-bold mb-2">{name}</h3>
+      <div className="mb-6">
+        <span className="text-4xl font-bold">{price}</span>
+        <span className={highlighted ? 'text-blue-100' : 'text-gray-600'}>{period}</span>
       </div>
+      <ul className="space-y-3 mb-8">
+        {features.map((feature, i) => (
+          <li key={i} className="flex items-start">
+            <span className="mr-2">{highlighted ? '✓' : '•'}</span>
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href="/register"
+        className={`block text-center px-6 py-3 rounded-lg font-semibold ${
+          highlighted
+            ? 'bg-white text-blue-600 hover:bg-gray-100'
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+        }`}
+      >
+        Get Started
+      </Link>
     </div>
   );
 }

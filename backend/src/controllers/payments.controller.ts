@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
+import Stripe from "stripe";
 import { prisma } from "../utils/prisma";
 import { logger } from "../utils/logger";
+import { z } from "zod";
+import { fraudDetectionAgent } from "../agents/FraudDetectionAgent";
 import {
   processDebitCard,
   processHSAFSA,
@@ -9,10 +12,9 @@ import {
   DebitCardData,
   HSAFSAData,
 } from "../utils/debitCard";
-import { AuthRequest } from "../middleware/auth";
 
 export class PaymentController {
-  async createPayment(req: AuthRequest, res: Response) {
+  async createPayment(req: Request, res: Response) {
     try {
       const {
         amount,
@@ -34,6 +36,27 @@ export class PaymentController {
 
       if (!patient) {
         return res.status(404).json({ error: "Patient not found" });
+      }
+
+      // AI Fraud Detection Check
+      const fraudResult = await fraudDetectionAgent.analyzeTransaction(
+        req.user!.id,
+        amount,
+        currency || "USD",
+        description,
+        { paymentMethod, patientId, facilityId },
+      );
+
+      if (fraudResult.isSuspicious && fraudResult.riskScore > 80) {
+        logger.warn(
+          `Fraud Alert: Transaction blocked for user ${req.user!.id}. Risk Score: ${fraudResult.riskScore}. Reason: ${fraudResult.reason}`,
+        );
+        return res.status(403).json({
+          error: "FRAUD_ALERT",
+          message: "Transaction flagged by security systems for manual review.",
+          riskScore: fraudResult.riskScore,
+          reason: fraudResult.reason,
+        });
       }
 
       // Calculate processing fee based on payment method
@@ -135,7 +158,7 @@ export class PaymentController {
     }
   }
 
-  async getPayments(req: AuthRequest, res: Response) {
+  async getPayments(req: Request, res: Response) {
     try {
       const { page = 1, limit = 20, status, patientId, facilityId } = req.query;
       const skip = (Number(page) - 1) * Number(limit);
@@ -186,7 +209,7 @@ export class PaymentController {
     }
   }
 
-  async getPaymentById(req: AuthRequest, res: Response) {
+  async getPaymentById(req: Request, res: Response) {
     try {
       const { id } = req.params;
 
@@ -222,7 +245,7 @@ export class PaymentController {
     }
   }
 
-  async updatePaymentStatus(req: AuthRequest, res: Response) {
+  async updatePaymentStatus(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const { status, transactionId } = req.body;
@@ -254,7 +277,7 @@ export class PaymentController {
     }
   }
 
-  async createCryptoPayment(req: AuthRequest, res: Response) {
+  async createCryptoPayment(req: Request, res: Response) {
     try {
       const { amount, cryptocurrency, walletAddress, patientId, facilityId } =
         req.body;
@@ -294,7 +317,7 @@ export class PaymentController {
     }
   }
 
-  async getCryptoRates(req: AuthRequest, res: Response) {
+  async getCryptoRates(req: Request, res: Response) {
     try {
       // Mock crypto rates - in production, integrate with real API
       const rates = {
@@ -311,7 +334,7 @@ export class PaymentController {
     }
   }
 
-  async refundPayment(req: AuthRequest, res: Response) {
+  async refundPayment(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const { reason } = req.body;

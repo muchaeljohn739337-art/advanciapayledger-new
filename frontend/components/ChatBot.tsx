@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useRef, useEffect } from "react";
 import { X, Send, Bot, User, Sparkles, Loader2 } from "lucide-react";
 import { Transaction, TransactionStatus, TransactionType } from "../lib/types";

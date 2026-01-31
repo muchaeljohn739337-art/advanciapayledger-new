@@ -1,7 +1,7 @@
 // Gemini AI Service for Advancia PayLedger
 // This service provides AI-powered financial analysis and receipt parsing
 
-import { GoogleGenerativeAI } from '@google/genai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize Gemini AI (will need API key in production)
 const ai = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'demo-key');

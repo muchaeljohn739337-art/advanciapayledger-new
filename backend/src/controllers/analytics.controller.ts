@@ -64,20 +64,23 @@ export const getPaymentSummary = async (req: Request, res: Response) => {
       }
     });
 
-    const summary = payments.reduce((acc, payment) => {
-      const method = payment.method;
-      if (!acc[method]) {
-        acc[method] = { count: 0, amount: 0 };
+    const paymentsByMethod: Record<string, { count: number; total: number }> =
+      {};
+    payments.forEach((payment) => {
+      const method = payment.paymentMethod || "unknown";
+      if (!paymentsByMethod[method]) {
+        paymentsByMethod[method] = { count: 0, total: 0 };
       }
-      acc[method].count += 1;
-      acc[method].amount += payment.amount;
-      return acc;
-    }, {} as Record<string, { count: number; amount: number }>);
+      paymentsByMethod[method].count++;
+      paymentsByMethod[method].total += Number(payment.amount);
+    });
+
+    const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
 
     res.json({
-      summary,
+      summary: paymentsByMethod,
       totalPayments: payments.length,
-      totalAmount: payments.reduce((sum, p) => sum + p.amount, 0)
+      totalAmount: totalRevenue,
     });
   } catch (error) {
     logger.error("Error fetching payment summary:", error);
@@ -94,13 +97,13 @@ export const getRevenueTrends = async (req: Request, res: Response) => {
     const payments = await prisma.payment.findMany({
       where: {
         status: "COMPLETED",
-        createdAt: { gte: startDate }
+        createdAt: { gte: startDate },
       },
       select: {
         amount: true,
         createdAt: true,
-        method: true
-      }
+        paymentMethod: true,
+      },
     });
 
     const trends = payments.reduce((acc, payment) => {
@@ -108,14 +111,14 @@ export const getRevenueTrends = async (req: Request, res: Response) => {
       if (!acc[date]) {
         acc[date] = { total: 0, count: 0, byMethod: {} };
       }
-      acc[date].total += payment.amount;
+      acc[date].total += Number(payment.amount);
       acc[date].count += 1;
       
-      const method = payment.method;
+      const method = payment.paymentMethod;
       if (!acc[date].byMethod[method]) {
         acc[date].byMethod[method] = 0;
       }
-      acc[date].byMethod[method] += payment.amount;
+      acc[date].byMethod[method] += Number(payment.amount);
       
       return acc;
     }, {} as Record<string, { total: number; count: number; byMethod: Record<string, number> }>);
@@ -143,8 +146,14 @@ export const getFacilityPerformance = async (req: Request, res: Response) => {
     });
 
     const performance = facilities.map(facility => {
-      const totalRevenue = facility.patients.reduce((sum, patient) => 
-        sum + patient.payments.reduce((pSum, payment) => pSum + payment.amount, 0), 0
+      const totalRevenue = facility.patients.reduce(
+        (sum, patient) =>
+          sum +
+          patient.payments.reduce(
+            (pSum, payment) => pSum + Number(payment.amount.toString()),
+            0,
+          ),
+        0,
       );
       
       const totalTransactions = facility.patients.reduce((sum, patient) => 
@@ -186,17 +195,21 @@ export const getPatientOverview = async (req: Request, res: Response) => {
       }
     });
 
-    const overview = patients.map(patient => ({
+    const overview = patients.map((patient) => ({
       id: patient.id,
       firstName: patient.firstName,
       lastName: patient.lastName,
       email: patient.email,
       facility: patient.facility.name,
       totalPayments: patient.payments.length,
-      totalAmount: patient.payments.reduce((sum, payment) => sum + payment.amount, 0),
-      lastPayment: patient.payments.length > 0 
-        ? Math.max(...patient.payments.map(p => p.createdAt.getTime()))
-        : null
+      totalAmount: patient.payments.reduce(
+        (sum, payment) => sum + parseFloat(payment.amount.toString()),
+        0,
+      ),
+      lastPayment:
+        patient.payments.length > 0
+          ? Math.max(...patient.payments.map((p) => p.createdAt.getTime()))
+          : null,
     }));
 
     res.json(overview);
@@ -227,8 +240,8 @@ export const getRevenueForecast = async (req: Request, res: Response) => {
       const monthEnd = new Date(Date.now() - i * 30 * 24 * 60 * 60 * 1000);
       
       return historicalPayments
-        .filter(p => p.createdAt >= monthStart && p.createdAt < monthEnd)
-        .reduce((sum, p) => sum + p.amount, 0);
+        .filter((p) => p.createdAt >= monthStart && p.createdAt < monthEnd)
+        .reduce((sum, p) => sum + Number(p.amount), 0);
     });
 
     const avgMonthlyRevenue = monthlyAverages.reduce((sum, val) => sum + val, 0) / 3;

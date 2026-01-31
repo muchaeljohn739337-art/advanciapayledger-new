@@ -176,7 +176,7 @@ const verifyBankAccount = async (
       ? bankNames[Math.floor(Math.random() * bankNames.length)]
       : undefined;
 
-    return { valid, bankName: bankName || undefined };
+    return { valid, ...(bankName && { bankName }) };
   } catch (error) {
     logger.error("Bank account verification failed:", error);
     return { valid: false };
