@@ -3,7 +3,7 @@ uvicorn[standard]==0.27.0
 httpx==0.26.0
 anthropic==0.18.1
 pydantic==2.5.3
-python-multipart==0.0.7
+python-multipart==0.0.18
 h11>=0.16.0 # not directly required, pinned by Snyk to avoid a vulnerability
 anyio>=4.4.0 # not directly required, pinned by Snyk to avoid a vulnerability
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
