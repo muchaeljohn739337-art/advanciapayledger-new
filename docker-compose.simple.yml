@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: advancia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: advanciapayledger
+      POSTGRES_USER: advancia
+      POSTGRES_PASSWORD: advancia123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - advancia-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U advancia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: advancia-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - advancia-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Use pre-built image from GitHub Container Registry
+  # Replace with your actual image name if different
+  backend:
+    image: ghcr.io/advancia-devuser/advancia-payledger-backend:latest
+    container_name: advancia-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://advancia:advancia123@postgres:5432/advanciapayledger
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: your-super-secret-jwt-key-min-32-chars-here
+      JWT_REFRESH_SECRET: your-super-secret-refresh-key-here
+      ENCRYPTION_KEY: your-64-character-hex-encryption-key-here
+      SENTRY_DSN: https://0a37d7fc25f561b3efeae2909bf2ea5c@o4510804348698624.ingest.us.sentry.io/4510804351057920
+      PORT: 3001
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - advancia-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Use pre-built image from GitHub Container Registry
+  # Replace with your actual image name if different
+  frontend:
+    image: ghcr.io/advancia-devuser/advancia-payledger-frontend:latest
+    container_name: advancia-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_SENTRY_DSN: https://0a37d7fc25f561b3efeae2909bf2ea5c@o4510804348698624.ingest.us.sentry.io/4510804351057920
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - advancia-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  advancia-network:
+    driver: bridge

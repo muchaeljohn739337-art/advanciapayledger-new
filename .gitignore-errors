@@ -1,0 +1,6 @@
+# Files with TypeScript compilation errors - DO NOT COMMIT
+backend/src/services/bookingService.ts
+backend/src/services/chamberService.ts
+backend/src/services/emailIntegrationService.ts
+backend/src/lib/emailTemplates.ts
+backend/src/tests/alertSystem.test.ts

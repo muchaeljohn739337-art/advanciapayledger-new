@@ -1,5 +1,5 @@
 # Advancia PayLedger - Backend Deployment Script (Windows/PowerShell)
-# Target: DigitalOcean Server 157.245.8.131
+# Target: DigitalOcean Server 147.182.193.11
 
 $ErrorActionPreference = "Stop"
 

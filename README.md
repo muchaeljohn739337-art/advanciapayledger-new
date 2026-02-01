@@ -188,7 +188,7 @@ cd backend && npx prisma migrate reset
 
 ```bash
 # SSH into your server
-ssh root@157.245.8.131
+ssh root@147.182.193.11
 
 # Clone repository
 git clone https://github.com/advancia-devuser/advanciapayledger-new.git

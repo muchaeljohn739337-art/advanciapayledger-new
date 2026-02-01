@@ -1,5 +1,5 @@
-import EmailTemplates from '../lib/emailTemplates';
-import { emailService } from '../lib/emailService';
+import * as EmailTemplates from "../lib/emailTemplates";
+import { emailService } from "../lib/emailService";
 
 interface User {
   id: string;
@@ -17,7 +17,7 @@ interface Transaction {
   recipientEmail: string;
   recipientName: string;
   method: string;
-  type: 'crypto' | 'fiat' | 'exchange';
+  type: "crypto" | "fiat" | "exchange";
   blockchain?: string;
   blockNumber?: string;
   gasUsed?: string;
@@ -44,12 +44,12 @@ class EmailIntegrationService {
     try {
       const email = EmailTemplates.welcomePremium({
         name: user.name || `${user.firstName} ${user.lastName}`,
-        userName: user.name || user.firstName || 'there',
+        userName: user.name || user.firstName || "there",
         email: user.email,
       });
 
       await emailService.sendEmail({
-        from: process.env.EMAIL_FROM || 'noreply@advanciapayledger.com',
+        from: process.env.EMAIL_FROM || "noreply@advanciapayledger.com",
         to: user.email,
         subject: email.subject,
         html: email.html,
@@ -58,7 +58,7 @@ class EmailIntegrationService {
 
       console.log(`✅ Welcome email sent to ${user.email}`);
     } catch (error) {
-      console.error('❌ Failed to send welcome email:', error);
+      console.error("❌ Failed to send welcome email:", error);
       throw error;
     }
   }
@@ -68,44 +68,50 @@ class EmailIntegrationService {
    */
   async sendTransactionNotification(transaction: Transaction): Promise<void> {
     try {
-      const isCrypto = transaction.type === 'crypto' || 
-                      ['SOL', 'ETH', 'BTC', 'MATIC'].includes(transaction.currency);
+      const isCrypto =
+        transaction.type === "crypto" ||
+        ["SOL", "ETH", "BTC", "MATIC"].includes(transaction.currency);
 
       const email = EmailTemplates.transactionNotification({
         amount: transaction.amount.toFixed(2),
-        cryptoAmount: isCrypto ? transaction.amount.toString() : '',
-        cryptoSymbol: isCrypto ? transaction.currency : '',
+        cryptoAmount: isCrypto ? transaction.amount.toString() : "",
+        cryptoSymbol: isCrypto ? transaction.currency : "",
         cryptoUSD: `$${transaction.amount.toFixed(2)}`,
         senderName: transaction.senderName,
         paymentMethod: transaction.method,
         transactionId: transaction.id,
-        dateTime: transaction.createdAt.toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
+        dateTime: transaction.createdAt.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
           hour12: true,
         }),
         transactionUrl: `${process.env.FRONTEND_URL}/transactions/${transaction.id}`,
         isCrypto,
-        blockchain: transaction.blockchain || '',
-        blockNumber: transaction.blockNumber || '',
-        gasUsed: transaction.gasUsed || '',
-        explorerUrl: this.getExplorerUrl(transaction.blockchain, transaction.txHash),
+        blockchain: transaction.blockchain || "",
+        blockNumber: transaction.blockNumber || "",
+        gasUsed: transaction.gasUsed || "",
+        explorerUrl: this.getExplorerUrl(
+          transaction.blockchain,
+          transaction.txHash,
+        ),
       });
 
       await emailService.sendEmail({
-        from: 'notifications@advanciapayledger.com',
+        from: "notifications@advanciapayledger.com",
         to: transaction.recipientEmail,
         subject: email.subject,
         html: email.html,
         text: email.text,
       });
 
-      console.log(`✅ Transaction notification sent to ${transaction.recipientEmail}`);
+      console.log(
+        `✅ Transaction notification sent to ${transaction.recipientEmail}`,
+      );
     } catch (error) {
-      console.error('❌ Failed to send transaction notification:', error);
+      console.error("❌ Failed to send transaction notification:", error);
       throw error;
     }
   }
@@ -119,25 +125,27 @@ class EmailIntegrationService {
     fromCurrency: string,
     toAmount: number,
     toCurrency: string,
-    transactionId: string
+    transactionId: string,
   ): Promise<void> {
     try {
-      const isCrypto = ['SOL', 'ETH', 'BTC', 'USDC', 'USDT'].includes(toCurrency);
+      const isCrypto = ["SOL", "ETH", "BTC", "USDC", "USDT"].includes(
+        toCurrency,
+      );
 
       const email = EmailTemplates.transactionNotification({
         amount: fromAmount.toFixed(2),
-        cryptoAmount: isCrypto ? toAmount.toFixed(6) : '',
-        cryptoSymbol: isCrypto ? toCurrency : '',
+        cryptoAmount: isCrypto ? toAmount.toFixed(6) : "",
+        cryptoSymbol: isCrypto ? toCurrency : "",
         cryptoUSD: `$${fromAmount.toFixed(2)}`,
         senderName: user.name,
         paymentMethod: `${fromCurrency} → ${toCurrency} Exchange`,
         transactionId,
-        dateTime: new Date().toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
+        dateTime: new Date().toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
           hour12: true,
         }),
         transactionUrl: `${process.env.FRONTEND_URL}/transactions/${transactionId}`,
@@ -145,7 +153,7 @@ class EmailIntegrationService {
       });
 
       await emailService.sendEmail({
-        from: 'notifications@advanciapayledger.com',
+        from: "notifications@advanciapayledger.com",
         to: user.email,
         subject: `Currency Exchange Completed - ${fromCurrency} to ${toCurrency}`,
         html: email.html,
@@ -154,7 +162,7 @@ class EmailIntegrationService {
 
       console.log(`✅ Exchange notification sent to ${user.email}`);
     } catch (error) {
-      console.error('❌ Failed to send exchange notification:', error);
+      console.error("❌ Failed to send exchange notification:", error);
       throw error;
     }
   }
@@ -168,22 +176,23 @@ class EmailIntegrationService {
         name: loginAttempt.userName,
         userName: loginAttempt.userName,
         email: loginAttempt.userEmail,
-        location: loginAttempt.location || 'Unknown Location',
-        device: loginAttempt.device || loginAttempt.userAgent || 'Unknown Device',
+        location: loginAttempt.location || "Unknown Location",
+        device:
+          loginAttempt.device || loginAttempt.userAgent || "Unknown Device",
         ipAddress: loginAttempt.ipAddress,
-        timestamp: loginAttempt.timestamp.toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
+        timestamp: loginAttempt.timestamp.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
           hour12: true,
-          timeZoneName: 'short',
+          timeZoneName: "short",
         }),
       });
 
       await emailService.sendEmail({
-        from: 'security@advanciapayledger.com',
+        from: "security@advanciapayledger.com",
         to: loginAttempt.userEmail,
         subject: email.subject,
         html: email.html,
@@ -192,7 +201,7 @@ class EmailIntegrationService {
 
       console.log(`✅ Security alert sent to ${loginAttempt.userEmail}`);
     } catch (error) {
-      console.error('❌ Failed to send security alert:', error);
+      console.error("❌ Failed to send security alert:", error);
       throw error;
     }
   }
@@ -209,7 +218,7 @@ class EmailIntegrationService {
       });
 
       await emailService.sendEmail({
-        from: 'security@advanciapayledger.com',
+        from: "security@advanciapayledger.com",
         to: user.email,
         subject: email.subject,
         html: email.html,
@@ -218,7 +227,7 @@ class EmailIntegrationService {
 
       console.log(`✅ Password reset email sent to ${user.email}`);
     } catch (error) {
-      console.error('❌ Failed to send password reset email:', error);
+      console.error("❌ Failed to send password reset email:", error);
       throw error;
     }
   }
@@ -234,7 +243,7 @@ class EmailIntegrationService {
       invoiceId: string;
       total: number;
       items: Array<{ description: string; amount: number }>;
-    }
+    },
   ): Promise<void> {
     try {
       const email = EmailTemplates.invoice({
@@ -247,7 +256,7 @@ class EmailIntegrationService {
       });
 
       await emailService.sendEmail({
-        from: 'invoices@advanciapayledger.com',
+        from: "invoices@advanciapayledger.com",
         to: recipientEmail,
         subject: email.subject,
         html: email.html,
@@ -256,7 +265,7 @@ class EmailIntegrationService {
 
       console.log(`✅ Invoice email sent to ${recipientEmail}`);
     } catch (error) {
-      console.error('❌ Failed to send invoice email:', error);
+      console.error("❌ Failed to send invoice email:", error);
       throw error;
     }
   }
@@ -265,7 +274,7 @@ class EmailIntegrationService {
    * Get blockchain explorer URL
    */
   private getExplorerUrl(blockchain?: string, txHash?: string): string {
-    if (!blockchain || !txHash) return '';
+    if (!blockchain || !txHash) return "";
 
     const explorers: { [key: string]: string } = {
       ethereum: `https://etherscan.io/tx/${txHash}`,
@@ -274,29 +283,29 @@ class EmailIntegrationService {
       bitcoin: `https://blockchain.com/btc/tx/${txHash}`,
     };
 
-    return explorers[blockchain.toLowerCase()] || '';
+    return explorers[blockchain.toLowerCase()] || "";
   }
 
   /**
    * Queue email for later sending (using Bull Queue)
    */
   async queueEmail(
-    type: 'welcome' | 'transaction' | 'security' | 'invoice',
-    data: any
+    type: "welcome" | "transaction" | "security" | "invoice",
+    data: any,
   ): Promise<void> {
     // In production, use Bull Queue with Redis
     // For now, send immediately
     switch (type) {
-      case 'welcome':
+      case "welcome":
         await this.sendWelcomeEmail(data);
         break;
-      case 'transaction':
+      case "transaction":
         await this.sendTransactionNotification(data);
         break;
-      case 'security':
+      case "security":
         await this.sendSecurityAlert(data);
         break;
-      case 'invoice':
+      case "invoice":
         await this.sendInvoiceEmail(data.email, data.name, data.invoice);
         break;
     }

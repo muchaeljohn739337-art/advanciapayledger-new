@@ -19,11 +19,13 @@ import cryptoRoutes from "./routes/cryptoRoutes";
 import receiptRoutes from "./routes/receiptRoutes";
 import auditRoutes from "./routes/auditRoutes";
 import { securityRoutes } from "./routes/security";
-import walletRoutes from "./routes/wallet.secure";
+// import walletRoutes from "./routes/wallet.secure"; // File not found
 import chamberRoutes from "./routes/chambers";
 import bookingRoutes from "./routes/bookings";
 import scheduleRoutes from "./routes/schedule";
 import currencyRoutes from "./routes/currency.routes";
+import healthRouter from "./routes/health";
+import monitoringRoutes from "./routes/monitoring";
 import { rateLimiter } from "./middleware/rateLimiter";
 import {
   preventSensitiveTableAccess,
@@ -67,15 +69,8 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimiter);
 
-// Health check
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || "development",
-  });
-});
+// Health check routes (comprehensive monitoring)
+app.use(healthRouter);
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -95,6 +90,7 @@ app.use("/api/chambers", chamberRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/schedule", scheduleRoutes);
 app.use("/api/currency", currencyRoutes);
+app.use("/api/monitoring", monitoringRoutes);
 
 // Error handling
 app.use(notFoundHandler);

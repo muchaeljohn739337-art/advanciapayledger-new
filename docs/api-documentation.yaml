@@ -1,0 +1,463 @@
+openapi: 3.0.3
+info:
+  title: Advancia Pay Ledger API
+  description: |
+    Healthcare fintech platform API for processing cryptocurrency and traditional payments.
+    
+    **Features:**
+    - Multi-blockchain support (Solana, Ethereum, Polygon, Base)
+    - Traditional payment methods (ACH, Credit Card, Wire)
+    - HIPAA and PCI-DSS compliant
+    - Real-time transaction tracking
+    - Automated reconciliation
+    
+    **Authentication:**
+    All endpoints require JWT Bearer token authentication unless otherwise specified.
+    
+  version: 1.0.0
+  contact:
+    name: Advancia Pay Ledger API Support
+    email: api@advanciapayledger.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://api.advanciapayledger.com/v1
+    description: Production server
+  - url: https://staging-api.advanciapayledger.com/v1
+    description: Staging server
+  - url: http://localhost:3001/v1
+    description: Local development server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Facilities
+    description: Healthcare facility management
+  - name: Payments
+    description: Payment processing and transactions
+  - name: Ledger
+    description: Financial ledger and reconciliation
+  - name: Blockchain
+    description: Cryptocurrency transactions
+  - name: Invoices
+    description: Invoice management
+  - name: Users
+    description: User management
+  - name: Health
+    description: System health and monitoring
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Invalid request parameters
+        details:
+          type: object
+          
+    Transaction:
+      type: object
+      required:
+        - id
+        - facilityId
+        - amount
+        - currency
+        - type
+        - status
+        - paymentMethod
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        facilityId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          example: 150.00
+        currency:
+          type: string
+          enum: [USD, USDC, USDT, SOL, ETH, MATIC]
+          example: USD
+        type:
+          type: string
+          enum: [PAYMENT, REFUND, SETTLEMENT, ADJUSTMENT]
+          example: PAYMENT
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED]
+          example: COMPLETED
+        paymentMethod:
+          type: string
+          enum: [CREDIT_CARD, ACH, WIRE, CRYPTO, CASH]
+          example: CRYPTO
+        metadata:
+          type: object
+          description: Additional transaction metadata
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          
+    Facility:
+      type: object
+      required:
+        - id
+        - name
+        - address
+        - city
+        - state
+        - zipCode
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: St. Mary's Medical Center
+        address:
+          type: string
+          example: 123 Healthcare Dr
+        city:
+          type: string
+          example: San Francisco
+        state:
+          type: string
+          example: CA
+        zipCode:
+          type: string
+          example: 94102
+        phone:
+          type: string
+          example: 555-0100
+        email:
+          type: string
+          format: email
+        taxId:
+          type: string
+          example: 12-3456789
+        settings:
+          type: object
+          
+    Invoice:
+      type: object
+      required:
+        - id
+        - facilityId
+        - amount
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        patientName:
+          type: string
+          example: John Doe
+        amount:
+          type: number
+          format: double
+          example: 500.00
+        status:
+          type: string
+          enum: [DRAFT, SENT, PAID, OVERDUE, CANCELLED]
+        dueDate:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            type: object
+
+paths:
+  /health:
+    get:
+      summary: Basic health check
+      tags: [Health]
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                    
+  /auth/login:
+    post:
+      summary: Authenticate user
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+        '401':
+          description: Invalid credentials
+          
+  /facilities:
+    get:
+      summary: List all facilities
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Facility list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Facility'
+                  pagination:
+                    type: object
+                    
+    post:
+      summary: Create new facility
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Facility'
+      responses:
+        '201':
+          description: Facility created
+        '400':
+          description: Validation error
+          
+  /facilities/{facilityId}:
+    get:
+      summary: Get facility by ID
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: facilityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Facility details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+        '404':
+          description: Facility not found
+          
+  /payments:
+    post:
+      summary: Create payment transaction
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - facilityId
+                - amount
+                - currency
+                - paymentMethod
+              properties:
+                facilityId:
+                  type: string
+                  format: uuid
+                amount:
+                  type: number
+                  format: double
+                currency:
+                  type: string
+                paymentMethod:
+                  type: string
+                metadata:
+                  type: object
+      responses:
+        '201':
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Invalid payment data
+          
+  /payments/{transactionId}:
+    get:
+      summary: Get payment details
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+                
+  /payments/{transactionId}/status:
+    patch:
+      summary: Update payment status
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [COMPLETED, FAILED, CANCELLED]
+      responses:
+        '200':
+          description: Status updated
+          
+  /blockchain/solana/transfer:
+    post:
+      summary: Initiate Solana transfer
+      tags: [Blockchain]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - recipientAddress
+                - tokenMint
+              properties:
+                amount:
+                  type: number
+                recipientAddress:
+                  type: string
+                tokenMint:
+                  type: string
+      responses:
+        '200':
+          description: Transfer initiated
+          
+  /invoices:
+    get:
+      summary: List invoices
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: facilityId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'

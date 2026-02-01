@@ -1,0 +1,270 @@
+name: Azure CI/CD with OIDC
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: advancia_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Backend Dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Lint Backend
+        working-directory: backend
+        run: npm run lint
+
+      - name: Test Backend
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/advancia_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret-key-min-32-characters
+          NODE_ENV: test
+        run: npm test
+
+      - name: Build Backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint Frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build Frontend
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+        run: npm run build
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Security Audit (Backend)
+        working-directory: backend
+        run: npm audit --production --audit-level=high
+        continue-on-error: true
+
+      - name: Run Security Audit (Frontend)
+        working-directory: frontend
+        run: npm audit --production --audit-level=high
+        continue-on-error: true
+
+  deploy-sandbox:
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Deploy to Sandbox
+        run: |
+          echo "Deploying to sandbox environment..."
+          pwsh ./scripts/deploy.ps1 -Environment sandbox
+        env:
+          DATABASE_URL: ${{ secrets.SANDBOX_DATABASE_URL }}
+          REDIS_URL: ${{ secrets.SANDBOX_REDIS_URL }}
+          JWT_SECRET: ${{ secrets.SANDBOX_JWT_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
+      - name: Health Check (Sandbox)
+        run: |
+          sleep 30
+          curl -f https://sandbox-api.advanciapayledger.com/health || exit 1
+
+      - name: Notify Slack (Sandbox Success)
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "text": "✅ Sandbox Deployment Successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Sandbox Deployment*\n✅ Status: Success\n📦 Commit: ${{ github.sha }}\n👤 By: ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+
+  deploy-production:
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://api.advanciapayledger.com
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Create Pre-deployment Backup
+        run: |
+          echo "Creating backup..."
+          chmod +x scripts/backup-database.sh
+          ./scripts/backup-database.sh
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to production environment..."
+          pwsh ./scripts/deploy.ps1 -Environment prod
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          REDIS_URL: ${{ secrets.PROD_REDIS_URL }}
+          JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
+      - name: Run Database Migrations
+        run: |
+          cd backend
+          npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+
+      - name: Health Check (Production)
+        run: |
+          sleep 60
+          curl -f https://api.advanciapayledger.com/health || exit 1
+          curl -f https://api.advanciapayledger.com/health/ready || exit 1
+
+      - name: Smoke Tests
+        run: |
+          echo "Running smoke tests..."
+          curl -f https://api.advanciapayledger.com/health/detailed || exit 1
+
+      - name: Notify Slack (Production Success)
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "text": "🚀 Production Deployment Successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment*\n🚀 Status: Success\n📦 Commit: ${{ github.sha }}\n👤 By: ${{ github.actor }}\n🔗 <https://api.advanciapayledger.com|View API>"
+                  }
+                }
+              ]
+            }
+
+      - name: Notify Slack (Production Failure)
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "text": "❌ Production Deployment Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment*\n❌ Status: Failed\n📦 Commit: ${{ github.sha }}\n👤 By: ${{ github.actor }}\n⚠️ Manual intervention required"
+                  }
+                }
+              ]
+            }
+
+      - name: Rollback on Failure
+        if: failure()
+        run: |
+          echo "Deployment failed, initiating rollback..."
+          chmod +x scripts/rollback.sh
+          ./scripts/rollback.sh

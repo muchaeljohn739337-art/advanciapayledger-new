@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Advancia PayLedger - Backend Deployment Script
-# Target: DigitalOcean Server 157.245.8.131
+# Target: DigitalOcean Server 147.182.193.11
 
 set -e  # Exit on any error
 
@@ -9,7 +9,7 @@ echo "🚀 Starting Advancia PayLedger Backend Deployment..."
 echo "=================================================="
 
 # Configuration
-SERVER_IP="157.245.8.131"
+SERVER_IP="147.182.193.11"
 SERVER_USER="root"
 APP_DIR="/var/www/advancia-payledger"
 BACKEND_DIR="$APP_DIR/backend"

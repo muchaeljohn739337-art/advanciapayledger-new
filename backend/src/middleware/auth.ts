@@ -2,6 +2,16 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../utils/prisma";
 import { logger } from "../utils/logger";
+import { UserRole } from "@prisma/client";
+
+export interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: UserRole;
+    isActive: boolean;
+  };
+}
 
 export const authenticateToken = async (
   req: Request,
@@ -55,3 +65,6 @@ export const requireRole = (roles: string[]) => {
     next();
   };
 };
+
+// Alias for consistency
+export const authenticate = authenticateToken;

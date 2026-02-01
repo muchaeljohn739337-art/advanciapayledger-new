@@ -2,7 +2,7 @@
 
 **Version:** 2.0  
 **Last Updated:** January 30, 2026  
-**Server:** 157.245.8.131 (DigitalOcean)
+**Server:** 147.182.193.11 (DigitalOcean)
 
 ---
 
@@ -24,7 +24,7 @@ A complete, production-ready healthcare payment platform with:
 ## 📋 Pre-Deployment Checklist
 
 ### Infrastructure Ready
-- [ ] DigitalOcean Droplet: 157.245.8.131
+- [ ] DigitalOcean Droplet: 147.182.193.11
 - [ ] Node.js 20+ installed
 - [ ] PM2 installed globally
 - [ ] PostgreSQL 15+ configured
@@ -99,7 +99,7 @@ Create `.env` file on server with **production values**:
 
 ```bash
 # SSH to server
-ssh root@157.245.8.131
+ssh root@147.182.193.11
 
 # Create environment file
 nano /var/www/advancia-payledger/.env
@@ -241,10 +241,10 @@ npm run build
 tar -czf backend-deploy.tar.gz dist/ package.json package-lock.json prisma/
 
 # Upload to server
-scp backend-deploy.tar.gz root@157.245.8.131:/tmp/
+scp backend-deploy.tar.gz root@147.182.193.11:/tmp/
 
 # SSH to server
-ssh root@157.245.8.131
+ssh root@147.182.193.11
 
 # Extract and deploy
 cd /var/www/advancia-payledger
@@ -361,7 +361,7 @@ In Vercel Dashboard:
 #### 5.1 Create Nginx Configuration
 
 ```bash
-ssh root@157.245.8.131
+ssh root@147.182.193.11
 
 # Create Nginx config
 nano /etc/nginx/sites-available/advancia-payledger
@@ -603,7 +603,7 @@ git commit -m "Update: [description]"
 git push
 
 # On server
-ssh root@157.245.8.131
+ssh root@147.182.193.11
 cd /var/www/advancia-payledger
 git pull
 npm install
@@ -616,7 +616,7 @@ pm2 logs advancia-backend --lines 50
 
 ```bash
 # On server
-ssh root@157.245.8.131
+ssh root@147.182.193.11
 cd /var/www/advancia-payledger
 
 # View commit history
@@ -775,7 +775,7 @@ dpkg-reconfigure -plow unattended-upgrades
 ---
 
 **Deployment Completed:** ✅  
-**Server:** 157.245.8.131  
+**Server:** 147.182.193.11  
 **Backend:** https://api.advanciapayledger.com  
 **Frontend:** https://app.advanciapayledger.com  
 **Status:** Production Ready 🚀
