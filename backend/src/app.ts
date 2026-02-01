@@ -74,6 +74,13 @@ app.use(healthRouter);
 
 // API Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/patients", patientRoutes);
+app.use("/api/providers", providerRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/medical-records", medicalRecordRoutes);
+app.use("/api/prescriptions", prescriptionRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/facilities", facilityRoutes);
 app.use("/api/analytics", analyticsRoutes);
@@ -81,11 +88,11 @@ app.use("/api/webhooks", webhookRoutes);
 app.use("/api/debit-cards", debitCardRoutes);
 app.use("/api/ach", achRoutes);
 app.use("/api/insights", insightsRoutes);
-// app.use("/api/receipts", receiptRoutes); // TODO: Fix aws-sdk dependency
+app.use("/api/receipts", receiptRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/security", securityRoutes);
 app.use("/api/crypto", cryptoRoutes);
-// app.use("/api/wallet", walletRoutes); // TODO: Fix wallet.secure.ts schema issues
+app.use("/api/wallets", walletRoutes);
 app.use("/api/chambers", chamberRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/schedule", scheduleRoutes);

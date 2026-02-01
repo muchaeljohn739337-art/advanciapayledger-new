@@ -26,17 +26,61 @@ export const authenticateToken = async (
       return res.status(401).json({ error: "Access token required" });
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error("JWT_SECRET environment variable is not set");
+    // Use Supabase JWT secret for validation
+    const supabaseJwtSecret =
+      process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
+    if (!supabaseJwtSecret) {
+      throw new Error(
+        "SUPABASE_JWT_SECRET or JWT_SECRET environment variable is not set",
+      );
     }
 
-    const decoded = jwt.verify(token, jwtSecret) as any;
+    const decoded = jwt.verify(token, supabaseJwtSecret) as any;
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, isActive: true },
+    // Supabase JWT payload contains: { sub: userId, email, ... }
+    const supabaseUserId = decoded.sub;
+    const email = decoded.email;
+
+    if (!supabaseUserId) {
+      return res.status(401).json({ error: "Invalid token payload" });
+    }
+
+    // Find user by supabaseId (preferred) or fallback to old userId for backwards compatibility
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { supabaseId: supabaseUserId },
+          { id: decoded.userId }, // Fallback for old custom JWT tokens
+        ],
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isActive: true,
+        supabaseId: true,
+      },
     });
+
+    // If user doesn't exist, create profile automatically
+    if (!user && supabaseUserId && email) {
+      logger.info(`Creating user profile for Supabase user: ${email}`);
+      user = await prisma.user.create({
+        data: {
+          supabaseId: supabaseUserId,
+          email: email,
+          role: "PATIENT", // Default role
+          isActive: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          isActive: true,
+          supabaseId: true,
+        },
+      });
+    }
 
     if (!user || !user.isActive) {
       return res.status(401).json({ error: "Invalid or inactive user" });

@@ -6,18 +6,18 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // User Management
 model User {
   id               String   @id @default(uuid())
+  supabaseId       String?  @unique @map("supabase_id")
   email            String   @unique
-  passwordHash     String   @map("password_hash")
-  firstName        String   @map("first_name")
-  lastName         String   @map("last_name")
+  passwordHash     String?  @map("password_hash")
+  firstName        String?  @map("first_name")
+  lastName         String?  @map("last_name")
   role             UserRole @default(PATIENT)
   isActive         Boolean  @default(true) @map("is_active")
   twoFactorEnabled Boolean  @default(false) @map("two_factor_enabled")
@@ -26,17 +26,21 @@ model User {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   // Relations
-  patients       Patient[]
-  providers      Provider[]
-  payments       Payment[]
-  cryptoPayments CryptoPayment[]
-  refunds        Refund[]
-  auditLogs      AuditLog[]
-  wallets        Wallet[]
-  sessions       Session[]
-  transactions   Transaction[]
-  bookings       Booking[]
-  alerts         Alert[]
+  patients          Patient[]
+  providers         Provider[]
+  payments          Payment[]
+  cryptoPayments    CryptoPayment[]
+  refunds           Refund[]
+  auditLogs         AuditLog[]
+  wallets           Wallet[]
+  sessions          Session[]
+  transactions      Transaction[]
+  bookings          Booking[]
+  alerts            Alert[]
+  notifications     Notification[]
+  aiCommandLogs     AiCommandLog[]
+  cryptoWithdrawals CryptoWithdrawal[]
+  vectorMemory      VectorMemory[]
 
   @@map("users")
 }
@@ -592,4 +596,89 @@ enum AlertSeverity {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+// Notification System
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// AI Command Logs
+model AiCommandLog {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  model     String
+  input     Json
+  output    Json?
+  status    AiStatus @default(PENDING)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ai_command_logs")
+}
+
+enum AiStatus {
+  PENDING
+  COMPLETED
+  ERROR
+}
+
+// Crypto Withdrawals
+model CryptoWithdrawal {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  amount    Decimal          @db.Decimal(18, 8)
+  currency  String
+  status    WithdrawalStatus @default(PENDING)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("crypto_withdrawals")
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+// Vector Memory for AI
+model VectorMemory {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  embedding Json
+  context   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("vector_memory")
 }
