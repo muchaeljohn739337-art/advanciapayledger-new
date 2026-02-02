@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Redis } from 'ioredis';
+import { logger } from "../utils/logger";
 
 interface CryptoPrices {
   [key: string]: {
@@ -48,7 +49,7 @@ class CurrencyConversionService {
    * Start real-time price updates from CoinGecko API
    */
   private async startPriceUpdates() {
-    console.log('🔄 Starting real-time crypto price updates...');
+    logger.info("Starting real-time crypto price updates");
     
     // Initial fetch
     await this.updatePrices();
@@ -125,10 +126,10 @@ class CurrencyConversionService {
           JSON.stringify(this.priceCache)
         );
 
-        console.log('✅ Crypto prices updated successfully');
+        logger.info("Crypto prices updated successfully");
       }
     } catch (error) {
-      console.error('❌ Failed to update crypto prices:', error);
+      logger.error("Failed to update crypto prices", { error });
       // Continue using cached prices
     }
   }
@@ -143,7 +144,7 @@ class CurrencyConversionService {
         return JSON.parse(cached);
       }
     } catch (error) {
-      console.error('Redis error:', error);
+      logger.error("Redis error while fetching prices", { error });
     }
 
     return this.priceCache;

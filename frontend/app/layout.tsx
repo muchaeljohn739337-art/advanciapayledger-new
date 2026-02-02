@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import RealTimeNotifications from "../components/RealTimeNotifications";
+import { AuthProvider } from "../contexts/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,13 +20,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="min-h-screen bg-gray-50">
-          {/* Real-time WebSocket notifications */}
-          <RealTimeNotifications />
-          {children}
-          {/* AI Chatbot will be globally available */}
-          <div id="ai-chatbot-root" />
-        </div>
+        <AuthProvider>
+          <div className="min-h-screen bg-gray-50">
+            {/* Real-time WebSocket notifications */}
+            <RealTimeNotifications />
+            {children}
+            {/* AI Chatbot will be globally available */}
+            <div id="ai-chatbot-root" />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

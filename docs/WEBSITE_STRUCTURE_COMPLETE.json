@@ -1,0 +1,373 @@
+{
+  "siteName": "Advancia Pay Ledger",
+  "tagline": "Healthcare Payments Powered by Blockchain",
+  "navigation": {
+    "main": [
+      {
+        "title": "Solutions",
+        "path": "/solutions",
+        "icon": "Layers",
+        "children": [
+          {
+            "title": "Healthcare Payments",
+            "path": "/solutions/healthcare-payments",
+            "description": "Crypto-powered payment processing for medical facilities",
+            "features": ["Multi-chain support", "Instant settlement", "HIPAA compliant"]
+          },
+          {
+            "title": "Crypto Payroll",
+            "path": "/solutions/crypto-payroll",
+            "description": "Pay medical staff in cryptocurrency with automated tax reporting",
+            "features": ["Auto conversion", "Tax compliance", "Multi-currency"]
+          },
+          {
+            "title": "Medical Tourism",
+            "path": "/solutions/medical-tourism",
+            "description": "Cross-border payments for international patients",
+            "features": ["FX optimization", "Instant settlement", "Multi-language"]
+          },
+          {
+            "title": "DeFi Health Savings",
+            "path": "/solutions/defi-hsa",
+            "description": "Yield-generating health savings accounts on blockchain",
+            "features": ["Staking rewards", "Secure custody", "Regulatory compliant"]
+          }
+        ]
+      },
+      {
+        "title": "Platform",
+        "path": "/platform",
+        "icon": "Box",
+        "children": [
+          {
+            "title": "Multi-Chain Support",
+            "path": "/platform/multi-chain",
+            "description": "Solana, Ethereum, Polygon, Base integration",
+            "chains": ["Solana", "Ethereum", "Polygon", "Base"]
+          },
+          {
+            "title": "AI Agents",
+            "path": "/platform/ai-agents",
+            "description": "25+ AI agents for fraud detection, optimization, and insights",
+            "agents": ["Fraud Detection", "Payment Optimization", "Financial Insights", "Compliance Monitoring"]
+          },
+          {
+            "title": "Security & Compliance",
+            "path": "/platform/security",
+            "description": "HIPAA, PCI-DSS, GDPR compliant infrastructure",
+            "certifications": ["HIPAA", "PCI-DSS", "GDPR", "SOC 2"]
+          },
+          {
+            "title": "API Documentation",
+            "path": "/platform/api",
+            "description": "RESTful API for seamless integration",
+            "endpoints": ["Payments", "Wallets", "Transfers", "Analytics"]
+          }
+        ]
+      },
+      {
+        "title": "Products",
+        "path": "/products",
+        "icon": "CreditCard",
+        "children": [
+          {
+            "title": "Virtual Debit Cards",
+            "path": "/products/virtual-cards",
+            "description": "Instant virtual cards funded by crypto",
+            "features": ["Instant issuance", "Crypto-backed", "Global acceptance"]
+          },
+          {
+            "title": "Physical Debit Cards",
+            "path": "/products/physical-cards",
+            "description": "Premium metal cards with crypto rewards",
+            "features": ["Metal design", "Cashback rewards", "Worldwide shipping"]
+          },
+          {
+            "title": "Wallet Management",
+            "path": "/products/wallet",
+            "description": "Multi-chain wallet with advanced features",
+            "features": ["Multi-sig support", "Hardware wallet integration", "Real-time balance"]
+          },
+          {
+            "title": "Analytics Dashboard",
+            "path": "/products/analytics",
+            "description": "Real-time insights and reporting",
+            "features": ["Custom reports", "AI insights", "Export capabilities"]
+          }
+        ]
+      },
+      {
+        "title": "Pricing",
+        "path": "/pricing",
+        "icon": "DollarSign",
+        "tiers": [
+          {
+            "name": "Starter",
+            "price": "$99/month",
+            "features": ["Up to 100 transactions", "Basic support", "Single facility"],
+            "cta": "Start Free Trial"
+          },
+          {
+            "name": "Professional",
+            "price": "$499/month",
+            "features": ["Unlimited transactions", "Priority support", "Up to 5 facilities", "AI insights"],
+            "cta": "Get Started",
+            "popular": true
+          },
+          {
+            "name": "Enterprise",
+            "price": "Custom",
+            "features": ["Unlimited everything", "Dedicated account manager", "Custom integration", "White-label option"],
+            "cta": "Contact Sales"
+          }
+        ]
+      },
+      {
+        "title": "Resources",
+        "path": "/resources",
+        "icon": "BookOpen",
+        "children": [
+          {
+            "title": "Documentation",
+            "path": "/resources/docs",
+            "description": "Complete technical documentation",
+            "sections": ["Getting Started", "API Reference", "Integration Guides", "Best Practices"]
+          },
+          {
+            "title": "Case Studies",
+            "path": "/resources/case-studies",
+            "description": "Success stories from healthcare providers",
+            "categories": ["Hospitals", "Clinics", "Medical Tourism", "Telehealth"]
+          },
+          {
+            "title": "Blog",
+            "path": "/resources/blog",
+            "description": "Latest insights on healthcare and crypto",
+            "topics": ["Industry News", "Product Updates", "Technical Deep Dives", "Compliance"]
+          },
+          {
+            "title": "Help Center",
+            "path": "/resources/help",
+            "description": "FAQs and support articles",
+            "categories": ["Account Setup", "Payments", "Security", "Troubleshooting"]
+          },
+          {
+            "title": "Webinars",
+            "path": "/resources/webinars",
+            "description": "Live and recorded educational sessions",
+            "upcoming": true
+          }
+        ]
+      },
+      {
+        "title": "Company",
+        "path": "/company",
+        "icon": "Building",
+        "children": [
+          {
+            "title": "About Us",
+            "path": "/company/about",
+            "description": "Our mission to revolutionize healthcare payments"
+          },
+          {
+            "title": "Careers",
+            "path": "/company/careers",
+            "description": "Join our team",
+            "openPositions": true
+          },
+          {
+            "title": "Partners",
+            "path": "/company/partners",
+            "description": "Strategic partnerships and integrations",
+            "partnerTypes": ["Technology", "Healthcare", "Financial"]
+          },
+          {
+            "title": "Press",
+            "path": "/company/press",
+            "description": "Media kit and press releases"
+          },
+          {
+            "title": "Contact",
+            "path": "/company/contact",
+            "description": "Get in touch with our team"
+          }
+        ]
+      }
+    ],
+    "footer": {
+      "sections": [
+        {
+          "title": "Product",
+          "links": [
+            {"title": "Features", "path": "/platform"},
+            {"title": "Pricing", "path": "/pricing"},
+            {"title": "Security", "path": "/platform/security"},
+            {"title": "API", "path": "/platform/api"}
+          ]
+        },
+        {
+          "title": "Solutions",
+          "links": [
+            {"title": "Healthcare Payments", "path": "/solutions/healthcare-payments"},
+            {"title": "Crypto Payroll", "path": "/solutions/crypto-payroll"},
+            {"title": "Medical Tourism", "path": "/solutions/medical-tourism"},
+            {"title": "DeFi HSA", "path": "/solutions/defi-hsa"}
+          ]
+        },
+        {
+          "title": "Resources",
+          "links": [
+            {"title": "Documentation", "path": "/resources/docs"},
+            {"title": "Case Studies", "path": "/resources/case-studies"},
+            {"title": "Blog", "path": "/resources/blog"},
+            {"title": "Help Center", "path": "/resources/help"}
+          ]
+        },
+        {
+          "title": "Company",
+          "links": [
+            {"title": "About", "path": "/company/about"},
+            {"title": "Careers", "path": "/company/careers"},
+            {"title": "Partners", "path": "/company/partners"},
+            {"title": "Contact", "path": "/company/contact"}
+          ]
+        },
+        {
+          "title": "Legal",
+          "links": [
+            {"title": "Privacy Policy", "path": "/legal/privacy"},
+            {"title": "Terms of Service", "path": "/legal/terms"},
+            {"title": "Cookie Policy", "path": "/legal/cookies"},
+            {"title": "Compliance", "path": "/legal/compliance"}
+          ]
+        }
+      ],
+      "social": [
+        {"platform": "Twitter", "url": "https://twitter.com/advanciapayledger"},
+        {"platform": "LinkedIn", "url": "https://linkedin.com/company/advanciapayledger"},
+        {"platform": "GitHub", "url": "https://github.com/advanciapayledger"},
+        {"platform": "Discord", "url": "https://discord.gg/advanciapayledger"}
+      ]
+    },
+    "cta": {
+      "primary": {
+        "text": "Get Started",
+        "path": "/signup",
+        "style": "gradient"
+      },
+      "secondary": {
+        "text": "Book Demo",
+        "path": "/demo",
+        "style": "outline"
+      }
+    }
+  },
+  "pages": {
+    "home": {
+      "hero": {
+        "headline": "Healthcare Payments, Powered by Blockchain",
+        "subheadline": "Accept crypto payments, manage facilities, and optimize revenue with AI-powered insights",
+        "cta": ["Get Started", "Watch Demo"],
+        "illustration": "healthcare-crypto-bridge"
+      },
+      "sections": [
+        {
+          "type": "features",
+          "title": "Why Healthcare Providers Choose Advancia",
+          "features": [
+            {
+              "icon": "Zap",
+              "title": "Instant Settlement",
+              "description": "Receive payments in seconds, not days"
+            },
+            {
+              "icon": "Shield",
+              "title": "HIPAA Compliant",
+              "description": "Bank-grade security for patient data"
+            },
+            {
+              "icon": "Brain",
+              "title": "AI-Powered Insights",
+              "description": "25+ AI agents optimize your revenue"
+            },
+            {
+              "icon": "Globe",
+              "title": "Multi-Chain Support",
+              "description": "Accept payments on Solana, Ethereum, Polygon, Base"
+            }
+          ]
+        },
+        {
+          "type": "stats",
+          "title": "Trusted by Healthcare Providers Worldwide",
+          "stats": [
+            {"value": "$50M+", "label": "Processed Monthly"},
+            {"value": "500+", "label": "Healthcare Facilities"},
+            {"value": "99.9%", "label": "Uptime SLA"},
+            {"value": "42%", "label": "MoM Growth"}
+          ]
+        },
+        {
+          "type": "use-cases",
+          "title": "Built for Every Healthcare Need",
+          "cases": [
+            {
+              "title": "Hospitals & Clinics",
+              "description": "Streamline payments and facility management",
+              "image": "hospital-dashboard"
+            },
+            {
+              "title": "Medical Tourism",
+              "description": "Accept international payments seamlessly",
+              "image": "medical-tourism"
+            },
+            {
+              "title": "Telehealth",
+              "description": "Integrate payments into virtual consultations",
+              "image": "telehealth"
+            }
+          ]
+        },
+        {
+          "type": "testimonials",
+          "title": "What Our Customers Say",
+          "testimonials": [
+            {
+              "quote": "Advancia reduced our payment processing time from 3 days to 3 seconds",
+              "author": "Dr. Sarah Chen",
+              "role": "CFO, Metro Health Network",
+              "avatar": "avatar-1"
+            }
+          ]
+        },
+        {
+          "type": "cta-banner",
+          "title": "Ready to Transform Your Healthcare Payments?",
+          "subtitle": "Join 500+ healthcare providers already using Advancia",
+          "cta": ["Start Free Trial", "Schedule Demo"]
+        }
+      ]
+    },
+    "admin": {
+      "path": "/admin",
+      "protected": true,
+      "roles": ["admin", "super_admin"],
+      "tabs": [
+        {"title": "Dashboard", "icon": "LayoutDashboard"},
+        {"title": "Users", "icon": "Users"},
+        {"title": "Facilities", "icon": "Building2"},
+        {"title": "Transactions", "icon": "ArrowLeftRight"},
+        {"title": "Wallet", "icon": "Wallet"},
+        {"title": "Analytics", "icon": "BarChart3"},
+        {"title": "Settings", "icon": "Settings"}
+      ]
+    }
+  },
+  "seo": {
+    "defaultTitle": "Advancia Pay Ledger - Healthcare Payments on Blockchain",
+    "defaultDescription": "Accept crypto payments, manage medical facilities, and optimize revenue with AI-powered insights. HIPAA compliant, multi-chain support.",
+    "keywords": ["healthcare payments", "crypto payments", "medical billing", "blockchain healthcare", "HIPAA compliant", "multi-chain"],
+    "ogImage": "/og-image.png",
+    "twitterHandle": "@advanciapayledger"
+  }
+}

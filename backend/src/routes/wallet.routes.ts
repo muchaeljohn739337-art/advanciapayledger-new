@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getWalletService } from '../config/services';
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -45,7 +46,7 @@ router.post('/debit', async (req: Request, res: Response) => {
 
     res.json(result);
   } catch (error: any) {
-    console.error('Wallet debit error:', error);
+    logger.error("Wallet debit error", { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -92,7 +93,7 @@ router.post('/credit', async (req: Request, res: Response) => {
 
     res.json(result);
   } catch (error: any) {
-    console.error('Wallet credit error:', error);
+    logger.error("Wallet credit error", { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -142,7 +143,7 @@ router.post('/transfer', async (req: Request, res: Response) => {
 
     res.json(result);
   } catch (error: any) {
-    console.error('Wallet transfer error:', error);
+    logger.error("Wallet transfer error", { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -161,7 +162,7 @@ router.get('/balance/:currency', async (req: Request, res: Response) => {
 
     res.json({ balance, currency });
   } catch (error: any) {
-    console.error('Get balance error:', error);
+    logger.error("Get balance error", { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });

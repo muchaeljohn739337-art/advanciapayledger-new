@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate, AuthRequest, requireRole } from "../../middleware/auth";
 import { realTimeMonitoring } from "../../services/realTimeMonitoringService";
+import { logger } from "../../utils/logger";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.get("/user/alerts", authenticate, async (req: AuthRequest, res) => {
       unreadCount: alerts.filter((alert) => !alert.isRead).length,
     });
   } catch (error) {
-    console.error("Get user alerts error:", error);
+    logger.error("Get user alerts error", { error });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -49,7 +50,7 @@ router.post(
         message: "Alert acknowledged successfully",
       });
     } catch (error) {
-      console.error("Acknowledge alert error:", error);
+      logger.error("Acknowledge alert error", { error });
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -72,7 +73,7 @@ router.get(
         rules,
       });
     } catch (error) {
-      console.error("Get monitoring rules error:", error);
+      logger.error("Get monitoring rules error", { error });
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -97,7 +98,7 @@ router.post(
         message: "Monitoring rule added successfully",
       });
     } catch (error) {
-      console.error("Add monitoring rule error:", error);
+      logger.error("Add monitoring rule error", { error });
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -134,7 +135,7 @@ router.put(
         message: "Monitoring rule updated successfully",
       });
     } catch (error) {
-      console.error("Update monitoring rule error:", error);
+      logger.error("Update monitoring rule error", { error });
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -166,7 +167,7 @@ router.delete(
         message: "Monitoring rule deleted successfully",
       });
     } catch (error) {
-      console.error("Delete monitoring rule error:", error);
+      logger.error("Delete monitoring rule error", { error });
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -191,7 +192,7 @@ router.get(
         total: alerts.length,
       });
     } catch (error) {
-      console.error("Get system alerts error:", error);
+      logger.error("Get system alerts error", { error });
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -214,7 +215,7 @@ router.get(
         stats,
       });
     } catch (error) {
-      console.error("Get monitoring stats error:", error);
+      logger.error("Get monitoring stats error", { error });
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -273,7 +274,7 @@ router.post(
         message: "Test alert sent successfully",
       });
     } catch (error) {
-      console.error("Test alert error:", error);
+      logger.error("Test alert error", { error });
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",

@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import postmark from "postmark";
 import { Resend } from "resend";
+import { logger } from "../utils/logger";
 
 // Email service types
 export type EmailProvider = "postmark" | "resend" | "zoho" | "smtp";
@@ -40,13 +41,13 @@ class EmailService {
       this.postmarkClient = new postmark.ServerClient(
         process.env.POSTMARK_API_KEY
       );
-      console.log("✅ Postmark client initialized");
+      logger.info("Postmark client initialized");
     }
 
     // Initialize Resend
     if (process.env.RESEND_API_KEY) {
       this.resendClient = new Resend(process.env.RESEND_API_KEY);
-      console.log("✅ Resend client initialized");
+      logger.info("Resend client initialized");
     }
 
     // Initialize SMTP (Zoho/Gmail)
@@ -64,7 +65,7 @@ class EmailService {
           pass: process.env.SMTP_PASS,
         },
       });
-      console.log(`✅ SMTP client initialized for ${process.env.SMTP_HOST}`);
+      logger.info("SMTP client initialized", { host: process.env.SMTP_HOST });
     }
   }
 
@@ -81,11 +82,11 @@ class EmailService {
       try {
         const result = await this.sendWithProvider(provider, config);
         if (result.success) {
-          console.log(`📧 Email sent successfully via ${provider}`);
+          logger.info("Email sent successfully", { provider });
           return result;
         }
       } catch (error) {
-        console.warn(`❌ Failed to send via ${provider}:`, error);
+        logger.warn("Failed to send email via provider", { provider, error });
         continue;
       }
     }

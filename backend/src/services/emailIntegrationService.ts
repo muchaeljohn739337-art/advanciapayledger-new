@@ -1,5 +1,6 @@
 import * as EmailTemplates from "../lib/emailTemplates";
 import { emailService } from "../lib/emailService";
+import { logger } from "../utils/logger";
 
 interface User {
   id: string;
@@ -40,6 +41,37 @@ class EmailIntegrationService {
   /**
    * Send welcome email to new user
    */
+  async sendVerificationEmail(
+    user: User,
+    verificationToken: string,
+  ): Promise<void> {
+    try {
+      const email = EmailTemplates.emailVerification({
+        name: user.name || user.firstName || "there",
+        verificationLink: `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`,
+      });
+
+      await emailService.sendEmail({
+        from: process.env.EMAIL_FROM || "noreply@advanciapayledger.com",
+        to: user.email,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+      });
+
+      logger.info("Verification email sent", { to: user.email });
+    } catch (error) {
+      logger.error("Failed to send verification email", {
+        error,
+        to: user.email,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Send welcome email to new user
+   */
   async sendWelcomeEmail(user: User): Promise<void> {
     try {
       const email = EmailTemplates.welcomePremium({
@@ -56,9 +88,9 @@ class EmailIntegrationService {
         text: email.text,
       });
 
-      console.log(`✅ Welcome email sent to ${user.email}`);
+      logger.info(`Welcome email sent`, { to: user.email });
     } catch (error) {
-      console.error("❌ Failed to send welcome email:", error);
+      logger.error("Failed to send welcome email", { error, to: user.email });
       throw error;
     }
   }
@@ -107,11 +139,18 @@ class EmailIntegrationService {
         text: email.text,
       });
 
-      console.log(
-        `✅ Transaction notification sent to ${transaction.recipientEmail}`,
-      );
+      logger.info("Transaction notification sent", {
+        to: transaction.recipientEmail,
+        txId: transaction.id,
+        amount: transaction.amount,
+        currency: transaction.currency,
+      });
     } catch (error) {
-      console.error("❌ Failed to send transaction notification:", error);
+      logger.error("Failed to send transaction notification", {
+        error,
+        to: transaction.recipientEmail,
+        txId: transaction.id,
+      });
       throw error;
     }
   }
@@ -160,9 +199,16 @@ class EmailIntegrationService {
         text: email.text,
       });
 
-      console.log(`✅ Exchange notification sent to ${user.email}`);
+      logger.info("Exchange notification sent", {
+        to: user.email,
+        transactionId,
+      });
     } catch (error) {
-      console.error("❌ Failed to send exchange notification:", error);
+      logger.error("Failed to send exchange notification", {
+        error,
+        to: user.email,
+        transactionId,
+      });
       throw error;
     }
   }
@@ -199,9 +245,15 @@ class EmailIntegrationService {
         text: email.text,
       });
 
-      console.log(`✅ Security alert sent to ${loginAttempt.userEmail}`);
+      logger.info("Security alert email sent", {
+        to: loginAttempt.userEmail,
+        ip: loginAttempt.ipAddress,
+      });
     } catch (error) {
-      console.error("❌ Failed to send security alert:", error);
+      logger.error("Failed to send security alert", {
+        error,
+        to: loginAttempt.userEmail,
+      });
       throw error;
     }
   }
@@ -225,9 +277,12 @@ class EmailIntegrationService {
         text: email.text,
       });
 
-      console.log(`✅ Password reset email sent to ${user.email}`);
+      logger.info("Password reset email sent", { to: user.email });
     } catch (error) {
-      console.error("❌ Failed to send password reset email:", error);
+      logger.error("Failed to send password reset email", {
+        error,
+        to: user.email,
+      });
       throw error;
     }
   }
@@ -263,9 +318,38 @@ class EmailIntegrationService {
         text: email.text,
       });
 
-      console.log(`✅ Invoice email sent to ${recipientEmail}`);
+      logger.info("Invoice email sent", {
+        to: recipientEmail,
+        invoiceId: invoiceData.invoiceId,
+      });
     } catch (error) {
-      console.error("❌ Failed to send invoice email:", error);
+      logger.error("Failed to send invoice email", {
+        error,
+        to: recipientEmail,
+        invoiceId: invoiceData.invoiceId,
+      });
+      throw error;
+    }
+  }
+
+  async sendAccountantTransferNotification(data: any): Promise<void> {
+    try {
+      const email = EmailTemplates.accountantTransferNotification(data);
+
+      await emailService.sendEmail({
+        from: process.env.EMAIL_FROM || "noreply@advanciapayledger.com",
+        to: process.env.ACCOUNTANT_EMAIL || "accountant@example.com",
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+      });
+
+      logger.info("Accountant notification sent", { txHash: data.txHash });
+    } catch (error) {
+      logger.error("Failed to send accountant notification", {
+        error,
+        txHash: data.txHash,
+      });
       throw error;
     }
   }

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { currencyConversionService } from "../services/currencyConversionService";
 import { authenticateToken } from "../middleware/auth";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.get("/prices", async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Error fetching prices:", error);
+    logger.error("Error fetching prices", { error });
     res.status(500).json({
       success: false,
       message: "Failed to fetch crypto prices",
@@ -98,7 +99,7 @@ router.post(
         data: result,
       });
     } catch (error) {
-      console.error("Error converting currency:", error);
+      logger.error("Error converting currency", { error });
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : "Conversion failed",
@@ -148,7 +149,7 @@ router.post(
         data: result,
       });
     } catch (error) {
-      console.error("Error calculating conversion with fees:", error);
+      logger.error("Error calculating conversion with fees", { error });
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : "Calculation failed",
@@ -180,7 +181,7 @@ router.get("/rate/:from/:to", async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching exchange rate:", error);
+    logger.error("Error fetching exchange rate", { error });
     res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : "Failed to fetch rate",
@@ -231,7 +232,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error("Error fetching historical rate:", error);
+      logger.error("Error fetching historical rate", { error });
       res.status(500).json({
         success: false,
         message:
@@ -325,7 +326,7 @@ router.post(
         message: "Exchange completed successfully",
       });
     } catch (error) {
-      console.error("Error executing exchange:", error);
+      logger.error("Error executing exchange", { error });
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : "Exchange failed",

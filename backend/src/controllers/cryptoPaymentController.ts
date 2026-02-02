@@ -6,6 +6,7 @@
 import { Request, Response } from "express";
 import { web3Service, SUPPORTED_TOKENS } from "../services/web3Service";
 import { PrismaClient } from "@prisma/client";
+import { logger } from "../utils/logger";
 
 const prisma = new PrismaClient();
 
@@ -74,7 +75,7 @@ export const createPaymentRequest = async (req: Request, res: Response) => {
       },
     });
   } catch (error: unknown) {
-    console.error("[CryptoPayment] Create payment request error:", error);
+    logger.error("[CryptoPayment] Create payment request error", { error });
     if (error instanceof Error) {
       res.status(500).json({
         error: "Failed to create payment request",
@@ -145,7 +146,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
       });
     }
   } catch (error: unknown) {
-    console.error("[CryptoPayment] Verify payment error:", error);
+    logger.error("[CryptoPayment] Verify payment error", { error });
     if (error instanceof Error) {
       res.status(500).json({
         error: "Failed to verify payment",
@@ -183,7 +184,7 @@ export const getTransactionStatus = async (req: Request, res: Response) => {
       },
     });
   } catch (error: unknown) {
-    console.error("[CryptoPayment] Get transaction status error:", error);
+    logger.error("[CryptoPayment] Get transaction status error", { error });
     if (error instanceof Error) {
       res.status(500).json({
         error: "Failed to get transaction status",
@@ -235,7 +236,7 @@ export const getWalletBalance = async (req: Request, res: Response) => {
       balance,
     });
   } catch (error: unknown) {
-    console.error("[CryptoPayment] Get wallet balance error:", error);
+    logger.error("[CryptoPayment] Get wallet balance error", { error });
     if (error instanceof Error) {
       res.status(500).json({
         error: "Failed to get wallet balance",
@@ -286,7 +287,7 @@ export const authenticateWallet = async (req: Request, res: Response) => {
       });
     }
   } catch (error: unknown) {
-    console.error("[CryptoPayment] Authenticate wallet error:", error);
+    logger.error("[CryptoPayment] Authenticate wallet error", { error });
     if (error instanceof Error) {
       res.status(500).json({
         error: "Failed to authenticate wallet",
@@ -318,7 +319,7 @@ export const getSupportedTokens = async (req: Request, res: Response) => {
       })),
     });
   } catch (error: unknown) {
-    console.error("[CryptoPayment] Get supported tokens error:", error);
+    logger.error("[CryptoPayment] Get supported tokens error", { error });
     if (error instanceof Error) {
       res.status(500).json({
         error: "Failed to get supported tokens",
@@ -345,7 +346,7 @@ export const getGasPrices = async (req: Request, res: Response) => {
       gasPrice,
     });
   } catch (error: unknown) {
-    console.error("[CryptoPayment] Get gas prices error:", error);
+    logger.error("[CryptoPayment] Get gas prices error", { error });
     if (error instanceof Error) {
       res.status(500).json({
         error: "Failed to get gas prices",
@@ -374,7 +375,7 @@ export const getConnectionStatus = async (req: Request, res: Response) => {
       recentConnections: recentLogs,
     });
   } catch (error: unknown) {
-    console.error("[CryptoPayment] Get connection status error:", error);
+    logger.error("[CryptoPayment] Get connection status error", { error });
     if (error instanceof Error) {
       res.status(500).json({
         error: "Failed to get connection status",

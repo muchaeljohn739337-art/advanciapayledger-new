@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import { logger } from "./utils/logger";
@@ -19,6 +18,14 @@ import cryptoRoutes from "./routes/cryptoRoutes";
 import receiptRoutes from "./routes/receiptRoutes";
 import auditRoutes from "./routes/auditRoutes";
 import { securityRoutes } from "./routes/security";
+import userRoutes from "./routes/users";
+import patientRoutes from "./routes/patients";
+import providerRoutes from "./routes/providers";
+import appointmentRoutes from "./routes/appointments";
+import medicalRecordRoutes from "./routes/medical-records";
+import prescriptionRoutes from "./routes/prescriptions";
+import notificationRoutes from "./routes/notifications";
+import walletRoutes from "./routes/wallets";
 // import walletRoutes from "./routes/wallet.secure"; // File not found
 import chamberRoutes from "./routes/chambers";
 import bookingRoutes from "./routes/bookings";
@@ -26,7 +33,12 @@ import scheduleRoutes from "./routes/schedule";
 import currencyRoutes from "./routes/currency.routes";
 import healthRouter from "./routes/health";
 import monitoringRoutes from "./routes/monitoring";
+import { adminRoutes } from "./routes/admin";
+import { adminUserRoutes } from "./routes/admin/users";
+import { adminWalletRoutes } from "./routes/admin/wallet";
 import { rateLimiter } from "./middleware/rateLimiter";
+import { setupSwagger } from "./config/swagger";
+import { requestId, requestLogger } from "./middleware/requestLogger";
 import {
   preventSensitiveTableAccess,
   sanitizeQueries,
@@ -54,20 +66,38 @@ app.use(sanitizeResponse);
 
 // Standard Middleware
 app.use(helmet());
+// Add a conservative Content Security Policy (adjust as needed)
+app.use(
+  helmet.contentSecurityPolicy({
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: [
+        "'self'",
+        process.env.FRONTEND_URL || "http://localhost:3000",
+      ],
+      frameAncestors: ["'none'"],
+    },
+  }),
+);
+// Request correlation ID and structured request logging
+app.use(requestId);
+app.use(requestLogger);
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
   }),
 );
-app.use(
-  morgan("combined", {
-    stream: { write: (message) => logger.info(message.trim()) },
-  }),
-);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimiter);
+
+// API Documentation
+setupSwagger(app);
 
 // Health check routes (comprehensive monitoring)
 app.use(healthRouter);
@@ -98,6 +128,9 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/schedule", scheduleRoutes);
 app.use("/api/currency", currencyRoutes);
 app.use("/api/monitoring", monitoringRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/admin/wallet", adminWalletRoutes);
 
 // Error handling
 app.use(notFoundHandler);

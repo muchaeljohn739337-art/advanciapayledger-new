@@ -2,10 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Globe } from "lucide-react";
+import withAdminAuth from "@/hoc/withAdminAuth";
+import BusinessEcosystem from "@/components/BusinessEcosystem";
 
-export default function AdminConsolePage() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'activity' | 'security' | 'settings'>('dashboard');
-  const [timeRange, setTimeRange] = useState('24h');
+function AdminConsolePage() {
+  const [activeTab, setActiveTab] = useState<
+    | "dashboard"
+    | "users"
+    | "activity"
+    | "security"
+    | "wallet"
+    | "settings"
+    | "ecosystem"
+  >("dashboard");
+  const [timeRange, setTimeRange] = useState("24h");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -19,7 +30,9 @@ export default function AdminConsolePage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">Admin Console</h1>
-                <p className="text-white/60 text-sm">System Management & Monitoring</p>
+                <p className="text-white/60 text-sm">
+                  System Management & Monitoring
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -36,7 +49,10 @@ export default function AdminConsolePage() {
               <button className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition">
                 <span className="text-2xl">🔔</span>
               </button>
-              <Link href="/dashboard" className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition">
+              <Link
+                href="/dashboard"
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition"
+              >
                 Exit Admin
               </Link>
             </div>
@@ -44,21 +60,60 @@ export default function AdminConsolePage() {
 
           {/* Tabs */}
           <div className="flex space-x-2 mt-6">
-            <TabButton icon="📊" label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-            <TabButton icon="👥" label="Users" active={activeTab === 'users'} onClick={() => setActiveTab('users')} />
-            <TabButton icon="📋" label="Activity" active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} />
-            <TabButton icon="🔒" label="Security" active={activeTab === 'security'} onClick={() => setActiveTab('security')} />
-            <TabButton icon="⚙️" label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+            <TabButton
+              icon="📊"
+              label="Dashboard"
+              active={activeTab === "dashboard"}
+              onClick={() => setActiveTab("dashboard")}
+            />
+            <TabButton
+              icon="👥"
+              label="Users"
+              active={activeTab === "users"}
+              onClick={() => setActiveTab("users")}
+            />
+            <TabButton
+              icon="📋"
+              label="Activity"
+              active={activeTab === "activity"}
+              onClick={() => setActiveTab("activity")}
+            />
+            <TabButton
+              icon="🔒"
+              label="Security"
+              active={activeTab === "security"}
+              onClick={() => setActiveTab("security")}
+            />
+            <TabButton
+              icon="⚙️"
+              label="Settings"
+              active={activeTab === "settings"}
+              onClick={() => setActiveTab("settings")}
+            />
+            <TabButton
+              icon="💼"
+              label="Wallet"
+              active={activeTab === "wallet"}
+              onClick={() => setActiveTab("wallet")}
+            />
+            <TabButton
+              icon="🌐"
+              label="Ecosystem"
+              active={activeTab === "ecosystem"}
+              onClick={() => setActiveTab("ecosystem")}
+            />
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-8 py-8">
-        {activeTab === 'dashboard' && <DashboardView />}
-        {activeTab === 'users' && <UsersView />}
-        {activeTab === 'activity' && <ActivityView />}
-        {activeTab === 'security' && <SecurityView />}
-        {activeTab === 'settings' && <SettingsView />}
+        {activeTab === "dashboard" && <DashboardView />}
+        {activeTab === "users" && <UsersView />}
+        {activeTab === "activity" && <ActivityView />}
+        {activeTab === "security" && <SecurityView />}
+        {activeTab === "settings" && <SettingsView />}
+        {activeTab === "wallet" && <WalletView />}
+        {activeTab === "ecosystem" && <BusinessEcosystem />}
       </div>
     </div>
   );
@@ -168,28 +223,46 @@ function DashboardView() {
 // USERS VIEW - USER MANAGEMENT
 // ============================================
 
+import { adminApi } from "@/lib/api/admin";
+import TransferForm from "@/components/TransferForm";
+import Modal from "@/components/Modal";
+
 function UsersView() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
 
-  const users = [
-    { id: 1, name: 'Dr. Sarah Chen', email: 'sarah.chen@facility.com', role: 'OWNER', status: 'active', lastLogin: '2 min ago', sessions: 3, facility: 'Metro Health' },
-    { id: 2, name: 'John Smith', email: 'john.smith@facility.com', role: 'ADMIN', status: 'active', lastLogin: '15 min ago', sessions: 1, facility: 'Metro Health' },
-    { id: 3, name: 'Lisa Anderson', email: 'lisa.a@facility.com', role: 'MANAGER', status: 'active', lastLogin: '1 hour ago', sessions: 2, facility: 'Wellness Clinic' },
-    { id: 4, name: 'Michael Brown', email: 'michael.b@facility.com', role: 'STAFF', status: 'inactive', lastLogin: '3 days ago', sessions: 0, facility: 'Metro Health' },
-    { id: 5, name: 'Emma Davis', email: 'emma.d@facility.com', role: 'ACCOUNTANT', status: 'active', lastLogin: '30 min ago', sessions: 1, facility: 'Wellness Clinic' },
-    { id: 6, name: 'James Wilson', email: 'james.w@suspicious.net', role: 'STAFF', status: 'suspended', lastLogin: '5 days ago', sessions: 0, facility: 'Unknown' },
-  ];
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("token"); // Or however you store your auth token
+        if (!token) throw new Error("No auth token found");
+        const response = await adminApi.getAllUsers(token);
+        setUsers(response.data);
+      } catch (err) {
+        setError("Failed to fetch users");
+        console.error(err);
+      }
+      setLoading(false);
+    };
+
+    fetchUsers();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="space-y-6">
       {/* User Stats */}
       <div className="grid grid-cols-5 gap-4">
-        <StatBadge label="Total Users" value="1,247" color="blue" />
-        <StatBadge label="Active Now" value="342" color="green" />
-        <StatBadge label="Suspended" value="8" color="red" />
-        <StatBadge label="Pending" value="23" color="yellow" />
-        <StatBadge label="New Today" value="15" color="purple" />
+        <StatBadge label="Total Users" value={users.length} color="blue" />
+        <StatBadge label="Active Now" value="N/A" color="green" />
+        <StatBadge label="Suspended" value="N/A" color="red" />
+        <StatBadge label="Pending" value="N/A" color="yellow" />
+        <StatBadge label="New Today" value="N/A" color="purple" />
       </div>
 
       {/* Filters & Search */}
@@ -198,7 +271,7 @@ function UsersView() {
           <div className="flex items-center space-x-4">
             <input
               type="text"
-              placeholder="Search users by name, email, facility..."
+              placeholder="Search users by name, email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-96 px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg placeholder-white/50 focus:ring-2 focus:ring-purple-500"
@@ -209,11 +282,9 @@ function UsersView() {
               className="px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All Roles</option>
-              <option value="OWNER">Owner</option>
               <option value="ADMIN">Admin</option>
-              <option value="MANAGER">Manager</option>
-              <option value="STAFF">Staff</option>
-              <option value="ACCOUNTANT">Accountant</option>
+              <option value="PATIENT">Patient</option>
+              <option value="PROVIDER">Provider</option>
             </select>
           </div>
           <button className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition">
@@ -227,53 +298,55 @@ function UsersView() {
         <table className="w-full">
           <thead className="bg-white/5">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">User</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">Role</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">Facility</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">Status</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">Last Login</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">Sessions</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">Actions</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">
+                User
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">
+                Role
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">
+                Status
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {users.map((user) => (
+            {users.map((user: any) => (
               <tr key={user.id} className="hover:bg-white/5 transition">
                 <td className="px-6 py-4">
                   <div>
-                    <div className="font-semibold text-white">{user.name}</div>
+                    <div className="font-semibold text-white">
+                      {user.firstName} {user.lastName}
+                    </div>
                     <div className="text-sm text-white/60">{user.email}</div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                    user.role === 'OWNER' ? 'bg-purple-500/20 text-purple-300' :
-                    user.role === 'ADMIN' ? 'bg-blue-500/20 text-blue-300' :
-                    user.role === 'MANAGER' ? 'bg-cyan-500/20 text-cyan-300' :
-                    'bg-gray-500/20 text-gray-300'
-                  }`}>
+                  <span
+                    className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                      user.role === "ADMIN"
+                        ? "bg-blue-500/20 text-blue-300"
+                        : "bg-gray-500/20 text-gray-300"
+                    }`}
+                  >
                     {user.role}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-white/80">{user.facility}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                    user.status === 'active' ? 'bg-green-500/20 text-green-300' :
-                    user.status === 'inactive' ? 'bg-gray-500/20 text-gray-300' :
-                    'bg-red-500/20 text-red-300'
-                  }`}>
-                    {user.status}
+                  <span
+                    className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                      user.isActive
+                        ? "bg-green-500/20 text-green-300"
+                        : "bg-red-500/20 text-red-300"
+                    }`}
+                  >
+                    {user.isActive ? "Active" : "Inactive"}
                   </span>
-                </td>
-                <td className="px-6 py-4 text-white/80">{user.lastLogin}</td>
-                <td className="px-6 py-4">
-                  <span className="text-white font-semibold">{user.sessions}</span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex space-x-2">
-                    <button className="p-1 hover:bg-white/10 rounded">
-                      <span className="text-lg">👁️</span>
-                    </button>
                     <button className="p-1 hover:bg-white/10 rounded">
                       <span className="text-lg">✏️</span>
                     </button>
@@ -781,6 +854,173 @@ function SecurityMetric({ title, value, status, icon }: any) {
   );
 }
 
+// ============================================
+// WALLET VIEW - CRYPTO TRANSFERS
+// ============================================
+
+function WalletView() {
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [transferData, setTransferData] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [walletDetails, setWalletDetails] = useState<any>(null);
+  const [transferHistory, setTransferHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('No auth token found');
+        const [detailsRes, historyRes] = await Promise.all([
+          adminApi.getWalletDetails(token),
+          adminApi.getTransferHistory(token),
+        ]);
+        setWalletDetails(detailsRes.data);
+        setTransferHistory(historyRes.data);
+      } catch (err) {
+        console.error('Failed to fetch wallet data', err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleReviewTransfer = (data: any) => {
+    setTransferData(data);
+    setIsConfirming(true);
+  };
+
+  const handleNotifyAccountant = async () => {
+    if (!txHash || !transferData) return;
+
+    setNotificationStatus('sending');
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No auth token found');
+
+      await adminApi.notifyAccountant(
+        {
+          txHash,
+          amount: transferData.amount,
+          token: transferData.token,
+          recipient: transferData.recipient,
+          network: transferData.network,
+          memo: transferData.memo,
+        },
+        token
+      );
+      setNotificationStatus('sent');
+    } catch (err) {
+      setNotificationStatus('error');
+      console.error('Failed to send notification', err);
+    }
+  };
+
+  const handleConfirmTransfer = async () => {
+    if (!transferData) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No auth token found');
+
+      const response = await adminApi.executeTransfer(transferData, token);
+      setTxHash(response.data.tx_hash);
+      setIsConfirming(false);
+      setTransferData(null);
+    } catch (err) {
+      setError('Failed to execute transfer');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {walletDetails && (
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
+          <h3 className="text-xl font-bold text-white mb-2">Platform Wallet</h3>
+          <p className="text-white/80 text-sm">Address: <span className="font-mono">{walletDetails.address}</span></p>
+          <p className="text-white/80 text-sm">Balance: <span className="font-bold">{walletDetails.balance.toFixed(2)} {walletDetails.token}</span></p>
+        </div>
+      )}
+
+      <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
+        <h3 className="text-xl font-bold text-white mb-6">Execute Transfer</h3>
+        {txHash ? (
+          <div className="text-center p-4 bg-green-500/10 rounded-lg">
+            <p className="text-green-300 font-bold">Transfer Successful!</p>
+            <p className="text-white/80 text-sm mt-2">Transaction Hash:</p>
+            <p className="text-white font-mono text-xs break-all">{txHash}</p>
+            <div className="flex justify-center gap-4 mt-4">
+              <button onClick={() => setTxHash(null)} className="px-4 py-2 bg-white/10 rounded-lg">New Transfer</button>
+              {notificationStatus !== 'sent' && (
+                <button onClick={handleNotifyAccountant} disabled={notificationStatus === 'sending'} className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-400">
+                  {notificationStatus === 'sending' ? 'Sending...' : 'Email Accountant'}
+                </button>
+              )}
+            </div>
+            {notificationStatus === 'sent' && <p className="text-green-300 text-sm mt-2">Accountant notified successfully!</p>}
+            {notificationStatus === 'error' && <p className="text-red-400 text-sm mt-2">Failed to send notification.</p>}
+          </div>
+        ) : (
+          <TransferForm onSubmit={handleReviewTransfer} onCancel={() => {}} />
+        )}
+      </div>
+
+      <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 mt-6">
+        <h3 className="text-xl font-bold text-white mb-6">Transfer History</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left text-white/80">
+            <thead className="text-xs text-white/60 uppercase bg-white/5">
+              <tr>
+                <th scope="col" className="px-6 py-3">Date</th>
+                <th scope="col" className="px-6 py-3">Recipient</th>
+                <th scope="col" className="px-6 py-3">Amount</th>
+                <th scope="col" className="px-6 py-3">Tx Hash</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transferHistory.map((tx) => (
+                <tr key={tx.id} className="border-b border-white/10 hover:bg-white/5">
+                  <td className="px-6 py-4">{new Date(tx.createdAt).toLocaleString()}</td>
+                  <td className="px-6 py-4 font-mono text-xs">{tx.details.recipient}</td>
+                  <td className="px-6 py-4">{tx.details.amount} {tx.details.token}</td>
+                  <td className="px-6 py-4 font-mono text-xs"><a href={`https://solscan.io/tx/${tx.details.signature}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{tx.details.signature.substring(0, 20)}...</a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Modal isOpen={isConfirming} onClose={() => setIsConfirming(false)} title="Confirm Transfer">
+        {transferData && (
+          <div className="space-y-4 text-white">
+            <p><strong>Recipient:</strong> {transferData.recipient}</p>
+            <p><strong>Amount:</strong> {transferData.amount} {transferData.token}</p>
+            <p><strong>Network:</strong> {transferData.network}</p>
+            <p><strong>Memo:</strong> {transferData.memo}</p>
+            {error && <p className="text-red-500">{error}</p>}
+            <div className="flex justify-end gap-4 pt-4">
+              <button onClick={() => setIsConfirming(false)} className="px-4 py-2 bg-slate-600 rounded-lg">Cancel</button>
+              <button onClick={handleConfirmTransfer} disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-400">
+                {isSubmitting ? 'Submitting...' : 'Confirm & Send'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}
+
+// ============================================
+// COMPONENTS
+// ============================================
+
 function SettingRow({ label, description, enabled }: any) {
   return (
     <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
@@ -802,3 +1042,5 @@ function SettingRow({ label, description, enabled }: any) {
     </div>
   );
 }
+
+export default withAdminAuth(AdminConsolePage);

@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import RedisLockService from './redisLockService';
 import IdempotencyService from './idempotencyService';
 import WalletService from './walletService';
+import { logger } from "../utils/logger";
 
 interface PaymentOptions {
   userId: string;
@@ -195,7 +196,7 @@ export class PaymentService {
             await this.handlePaymentFailure(event.data.object as Stripe.PaymentIntent);
             break;
           default:
-            console.log(`Unhandled event type: ${event.type}`);
+            logger.warn("Unhandled Stripe webhook event", { type: event.type });
         }
       },
       { ttl: 10, retries: 3, retryDelay: 100 }
@@ -206,7 +207,7 @@ export class PaymentService {
     const paymentId = paymentIntent.metadata.paymentId;
 
     if (!paymentId) {
-      console.error('Payment ID not found in metadata');
+      logger.error("Payment ID not found in metadata for succeeded intent");
       return;
     }
 
@@ -220,7 +221,7 @@ export class PaymentService {
       }
 
       if (payment.status === 'COMPLETED') {
-        console.log('Payment already completed, skipping');
+        logger.info("Payment already completed, skipping", { paymentId });
         return;
       }
 
@@ -248,7 +249,7 @@ export class PaymentService {
     const paymentId = paymentIntent.metadata.paymentId;
 
     if (!paymentId) {
-      console.error('Payment ID not found in metadata');
+      logger.error("Payment ID not found in metadata for failed intent");
       return;
     }
 

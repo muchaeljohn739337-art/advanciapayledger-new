@@ -11,6 +11,12 @@ datasource db {
 }
 
 // User Management
+enum UserApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id               String   @id @default(uuid())
   supabaseId       String?  @unique @map("supabase_id")
@@ -20,6 +26,7 @@ model User {
   lastName         String?  @map("last_name")
   role             UserRole @default(PATIENT)
   isActive         Boolean  @default(true) @map("is_active")
+  approvalStatus   UserApprovalStatus @default(PENDING) @map("approval_status")
   twoFactorEnabled Boolean  @default(false) @map("two_factor_enabled")
   twoFactorSecret  String?  @map("two_factor_secret")
   createdAt        DateTime @default(now()) @map("created_at")
@@ -41,6 +48,7 @@ model User {
   aiCommandLogs     AiCommandLog[]
   cryptoWithdrawals CryptoWithdrawal[]
   vectorMemory      VectorMemory[]
+  kycVerifications  KycVerification[]
 
   @@map("users")
 }
@@ -49,6 +57,22 @@ enum UserRole {
   PATIENT
   PROVIDER
   ADMIN
+}
+
+model KycVerification {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  sessionId   String    @unique @map("session_id")
+  provider    String
+  status      String    @default("pending") // pending, approved, rejected, cancelled
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("kyc_verifications")
 }
 
 // Healthcare Facilities
@@ -359,25 +383,25 @@ model Wallet {
 // ============================================
 
 model Session {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // SENSITIVE: Session token - protected by RLS
-  token         String   @unique
-  
+  token String @unique
+
   // SENSITIVE: Refresh token for minting new access tokens
   // ⚠️  CRITICAL: Exposure allows account takeover
   // ⚠️  Never return this field in API responses
   // ⚠️  Store encrypted in production
-  refreshToken  String?  @unique
-  
+  refreshToken String? @unique
+
   // Session metadata
-  ipAddress     String?
-  userAgent     String?
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
-  
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([token])
   @@index([expiresAt])
@@ -540,21 +564,21 @@ model ChamberMaintenance {
 
 // Alert System
 model Alert {
-  id            String      @id @default(uuid())
-  userId        String      @map("user_id")
+  id            String        @id @default(uuid())
+  userId        String        @map("user_id")
   type          AlertType
   severity      AlertSeverity
   title         String
   message       String
-  transactionId String?     @map("transaction_id")
-  amount        Decimal?    @map("amount")
+  transactionId String?       @map("transaction_id")
+  amount        Decimal?      @map("amount")
   currency      String?
-  paymentMethod String?     @map("payment_method")
-  riskScore     Float?      @map("risk_score")
-  isRead        Boolean     @default(false) @map("is_read")
+  paymentMethod String?       @map("payment_method")
+  riskScore     Float?        @map("risk_score")
+  isRead        Boolean       @default(false) @map("is_read")
   metadata      Json?
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id])
@@ -567,16 +591,16 @@ model Alert {
 }
 
 model MonitoringRule {
-  id          String            @id @default(uuid())
+  id          String        @id @default(uuid())
   name        String
   description String
-  enabled     Boolean          @default(true)
+  enabled     Boolean       @default(true)
   conditions  Json
   actions     Json
-  alertType   AlertType        @map("alert_type")
+  alertType   AlertType     @map("alert_type")
   severity    AlertSeverity
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
 
   @@index([enabled])
   @@index([alertType])

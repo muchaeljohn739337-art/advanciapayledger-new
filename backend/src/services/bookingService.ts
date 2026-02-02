@@ -25,7 +25,9 @@ export class BookingService {
    */
   async createBooking(data: CreateBookingData) {
     try {
-      const endTime = new Date(data.startTime.getTime() + data.duration * 60000);
+      const endTime = new Date(
+        data.startTime.getTime() + data.duration * 60000,
+      );
 
       let chamberId = data.chamberId;
 
@@ -40,15 +42,15 @@ export class BookingService {
             duration: data.duration,
             equipmentNeeded: data.equipmentNeeded || [],
             patientMobility: data.patientMobility,
-          }
+          },
         );
 
         if (!optimalChamber) {
-          throw new Error('No available chambers for the requested time slot');
+          throw new Error("No available chambers for the requested time slot");
         }
 
         chamberId = optimalChamber.id;
-        logger.info('Smart chamber assignment:', {
+        logger.info("Smart chamber assignment:", {
           chamberId,
           chamberName: optimalChamber.name,
           score: optimalChamber.score,
@@ -58,11 +60,13 @@ export class BookingService {
         const isAvailable = await chamberService.checkAvailability(
           chamberId,
           data.startTime,
-          endTime
+          endTime,
         );
 
         if (!isAvailable) {
-          throw new Error('Selected chamber is not available for the requested time slot');
+          throw new Error(
+            "Selected chamber is not available for the requested time slot",
+          );
         }
       }
 
@@ -79,8 +83,8 @@ export class BookingService {
           duration: data.duration,
           serviceType: data.serviceType,
           notes: data.notes,
-          status: 'pending',
-          paymentStatus: 'pending',
+          status: "pending",
+          paymentStatus: "pending",
           createdBy: data.createdBy,
         },
         include: {
@@ -120,13 +124,13 @@ export class BookingService {
         data: {
           chamberId,
           bookingId: booking.id,
-          status: 'reserved',
+          status: "reserved",
           startTime: data.startTime,
           endTime,
         },
       });
 
-      logger.info('Booking created:', {
+      logger.info("Booking created:", {
         bookingId: booking.id,
         chamberId,
         startTime: data.startTime,
@@ -134,7 +138,7 @@ export class BookingService {
 
       return booking;
     } catch (error) {
-      logger.error('Error creating booking:', error);
+      logger.error("Error creating booking:", error);
       throw error;
     }
   }
@@ -142,17 +146,25 @@ export class BookingService {
   /**
    * Get all bookings with filters
    */
-  async getBookings(filters?: {
-    facilityId?: string;
-    patientId?: string;
-    doctorId?: string;
-    chamberId?: string;
-    status?: string;
-    startDate?: Date;
-    endDate?: Date;
-  }) {
+  async getBookings(
+    user: { id: string; role: string },
+    filters?: {
+      facilityId?: string;
+      patientId?: string;
+      doctorId?: string;
+      chamberId?: string;
+      status?: string;
+      startDate?: Date;
+      endDate?: Date;
+    },
+  ) {
     try {
       const where: any = {};
+
+      // RLS-like filter: Non-admins/providers can only see their own bookings
+      if (!["admin", "super_admin", "provider"].includes(user.role)) {
+        where.patientId = user.id;
+      }
 
       if (filters?.facilityId) where.facilityId = filters.facilityId;
       if (filters?.patientId) where.patientId = filters.patientId;
@@ -198,13 +210,13 @@ export class BookingService {
           },
         },
         orderBy: {
-          startTime: 'asc',
+          startTime: "asc",
         },
       });
 
       return bookings;
     } catch (error) {
-      logger.error('Error fetching bookings:', error);
+      logger.error("Error fetching bookings:", error);
       throw error;
     }
   }
@@ -233,7 +245,7 @@ export class BookingService {
 
       return booking;
     } catch (error) {
-      logger.error('Error fetching booking:', error);
+      logger.error("Error fetching booking:", error);
       throw error;
     }
   }
@@ -250,7 +262,7 @@ export class BookingService {
       status?: string;
       notes?: string;
       paymentStatus?: string;
-    }
+    },
   ) {
     try {
       const booking = await prisma.booking.findUnique({
@@ -258,7 +270,7 @@ export class BookingService {
       });
 
       if (!booking) {
-        throw new Error('Booking not found');
+        throw new Error("Booking not found");
       }
 
       // If time or chamber is being changed, check availability
@@ -271,11 +283,11 @@ export class BookingService {
         const isAvailable = await chamberService.checkAvailability(
           chamberId,
           startTime,
-          endTime
+          endTime,
         );
 
         if (!isAvailable) {
-          throw new Error('Chamber is not available for the requested time');
+          throw new Error("Chamber is not available for the requested time");
         }
 
         // Update chamber schedule
@@ -295,7 +307,9 @@ export class BookingService {
           ...data,
           ...(data.startTime &&
             data.duration && {
-              endTime: new Date(data.startTime.getTime() + data.duration * 60000),
+              endTime: new Date(
+                data.startTime.getTime() + data.duration * 60000,
+              ),
             }),
         },
         include: {
@@ -306,10 +320,10 @@ export class BookingService {
         },
       });
 
-      logger.info('Booking updated:', { bookingId: id });
+      logger.info("Booking updated:", { bookingId: id });
       return updatedBooking;
     } catch (error) {
-      logger.error('Error updating booking:', error);
+      logger.error("Error updating booking:", error);
       throw error;
     }
   }
@@ -322,7 +336,7 @@ export class BookingService {
       const booking = await prisma.booking.update({
         where: { id },
         data: {
-          status: 'cancelled',
+          status: "cancelled",
           cancelledAt: new Date(),
           notes: reason
             ? `${reason}\n\nCancelled at: ${new Date().toISOString()}`
@@ -334,14 +348,14 @@ export class BookingService {
       await prisma.chamberSchedule.updateMany({
         where: { bookingId: id },
         data: {
-          status: 'cancelled',
+          status: "cancelled",
         },
       });
 
-      logger.info('Booking cancelled:', { bookingId: id });
+      logger.info("Booking cancelled:", { bookingId: id });
       return booking;
     } catch (error) {
-      logger.error('Error cancelling booking:', error);
+      logger.error("Error cancelling booking:", error);
       throw error;
     }
   }
@@ -354,7 +368,7 @@ export class BookingService {
       const booking = await prisma.booking.update({
         where: { id },
         data: {
-          status: 'confirmed',
+          status: "confirmed",
         },
         include: {
           patient: true,
@@ -367,14 +381,14 @@ export class BookingService {
       await prisma.chamberSchedule.updateMany({
         where: { bookingId: id },
         data: {
-          status: 'occupied',
+          status: "occupied",
         },
       });
 
-      logger.info('Booking confirmed:', { bookingId: id });
+      logger.info("Booking confirmed:", { bookingId: id });
       return booking;
     } catch (error) {
-      logger.error('Error confirming booking:', error);
+      logger.error("Error confirming booking:", error);
       throw error;
     }
   }
@@ -387,14 +401,14 @@ export class BookingService {
       const booking = await prisma.booking.update({
         where: { id },
         data: {
-          status: 'completed',
+          status: "completed",
         },
       });
 
-      logger.info('Booking completed:', { bookingId: id });
+      logger.info("Booking completed:", { bookingId: id });
       return booking;
     } catch (error) {
-      logger.error('Error completing booking:', error);
+      logger.error("Error completing booking:", error);
       throw error;
     }
   }
@@ -402,14 +416,18 @@ export class BookingService {
   /**
    * Get daily schedule
    */
-  async getDailySchedule(facilityId: string, date: Date) {
+  async getDailySchedule(
+    user: { id: string; role: string },
+    facilityId: string,
+    date: Date,
+  ) {
     try {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const bookings = await this.getBookings({
+      const bookings = await this.getBookings(user, {
         facilityId,
         startDate: startOfDay,
         endDate: endOfDay,
@@ -417,7 +435,7 @@ export class BookingService {
 
       return bookings;
     } catch (error) {
-      logger.error('Error fetching daily schedule:', error);
+      logger.error("Error fetching daily schedule:", error);
       throw error;
     }
   }
@@ -425,12 +443,16 @@ export class BookingService {
   /**
    * Get weekly schedule
    */
-  async getWeeklySchedule(facilityId: string, startDate: Date) {
+  async getWeeklySchedule(
+    user: { id: string; role: string },
+    facilityId: string,
+    startDate: Date,
+  ) {
     try {
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + 7);
 
-      const bookings = await this.getBookings({
+      const bookings = await this.getBookings(user, {
         facilityId,
         startDate,
         endDate,
@@ -438,7 +460,7 @@ export class BookingService {
 
       return bookings;
     } catch (error) {
-      logger.error('Error fetching weekly schedule:', error);
+      logger.error("Error fetching weekly schedule:", error);
       throw error;
     }
   }
@@ -446,9 +468,14 @@ export class BookingService {
   /**
    * Get doctor's schedule
    */
-  async getDoctorSchedule(doctorId: string, startDate: Date, endDate: Date) {
+  async getDoctorSchedule(
+    user: { id: string; role: string },
+    doctorId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
     try {
-      const bookings = await this.getBookings({
+      const bookings = await this.getBookings(user, {
         doctorId,
         startDate,
         endDate,
@@ -456,7 +483,7 @@ export class BookingService {
 
       return bookings;
     } catch (error) {
-      logger.error('Error fetching doctor schedule:', error);
+      logger.error("Error fetching doctor schedule:", error);
       throw error;
     }
   }
@@ -464,9 +491,14 @@ export class BookingService {
   /**
    * Get chamber schedule
    */
-  async getChamberSchedule(chamberId: string, startDate: Date, endDate: Date) {
+  async getChamberSchedule(
+    user: { id: string; role: string },
+    chamberId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
     try {
-      const bookings = await this.getBookings({
+      const bookings = await this.getBookings(user, {
         chamberId,
         startDate,
         endDate,
@@ -474,7 +506,7 @@ export class BookingService {
 
       return bookings;
     } catch (error) {
-      logger.error('Error fetching chamber schedule:', error);
+      logger.error("Error fetching chamber schedule:", error);
       throw error;
     }
   }
@@ -486,21 +518,30 @@ export class BookingService {
     doctorId: string,
     startTime: Date,
     endTime: Date,
-    excludeBookingId?: string
+    excludeBookingId?: string,
   ) {
     try {
       const where: any = {
         doctorId,
-        status: { in: ['confirmed', 'pending'] },
+        status: { in: ["confirmed", "pending"] },
         OR: [
           {
-            AND: [{ startTime: { lte: startTime } }, { endTime: { gt: startTime } }],
+            AND: [
+              { startTime: { lte: startTime } },
+              { endTime: { gt: startTime } },
+            ],
           },
           {
-            AND: [{ startTime: { lt: endTime } }, { endTime: { gte: endTime } }],
+            AND: [
+              { startTime: { lt: endTime } },
+              { endTime: { gte: endTime } },
+            ],
           },
           {
-            AND: [{ startTime: { gte: startTime } }, { endTime: { lte: endTime } }],
+            AND: [
+              { startTime: { gte: startTime } },
+              { endTime: { lte: endTime } },
+            ],
           },
         ],
       };
@@ -528,7 +569,7 @@ export class BookingService {
 
       return conflicts;
     } catch (error) {
-      logger.error('Error checking booking conflicts:', error);
+      logger.error("Error checking booking conflicts:", error);
       throw error;
     }
   }

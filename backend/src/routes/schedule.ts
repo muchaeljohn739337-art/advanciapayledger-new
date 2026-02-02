@@ -19,8 +19,9 @@ router.get('/daily', authenticateToken, async (req, res) => {
 
     const scheduleDate = date ? new Date(date as string) : new Date();
     const bookings = await bookingService.getDailySchedule(
+      req.user!,
       facilityId as string,
-      scheduleDate
+      scheduleDate,
     );
 
     res.json({
@@ -52,8 +53,9 @@ router.get('/weekly', authenticateToken, async (req, res) => {
 
     const weekStart = startDate ? new Date(startDate as string) : new Date();
     const bookings = await bookingService.getWeeklySchedule(
+      req.user!,
       facilityId as string,
-      weekStart
+      weekStart,
     );
 
     res.json({
@@ -85,9 +87,10 @@ router.get('/doctor/:id', authenticateToken, async (req, res) => {
     }
 
     const bookings = await bookingService.getDoctorSchedule(
+      req.user!,
       id,
       new Date(startDate as string),
-      new Date(endDate as string)
+      new Date(endDate as string),
     );
 
     res.json({
@@ -121,9 +124,10 @@ router.get('/chamber/:id', authenticateToken, async (req, res) => {
     }
 
     const bookings = await bookingService.getChamberSchedule(
+      req.user!,
       id,
       new Date(startDate as string),
-      new Date(endDate as string)
+      new Date(endDate as string),
     );
 
     res.json({

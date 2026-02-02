@@ -5,6 +5,7 @@ import RedisLockService from '../services/redisLockService';
 import IdempotencyService from '../services/idempotencyService';
 import WalletService from '../services/walletService';
 import PaymentService from '../services/paymentService';
+import { logger } from "../utils/logger";
 
 let prismaClient: PrismaClient | null = null;
 let lockService: RedisLockService | null = null;
@@ -20,7 +21,7 @@ export const getPrismaClient = (): PrismaClient => {
         : ['error'],
     });
     
-    console.log('Prisma client initialized');
+    logger.info("Prisma client initialized");
   }
   
   return prismaClient;
@@ -30,7 +31,7 @@ export const getLockService = (): RedisLockService => {
   if (!lockService) {
     const redis = getRedisClient();
     lockService = new RedisLockService(redis);
-    console.log('Lock service initialized');
+    logger.info("Lock service initialized");
   }
   
   return lockService;
@@ -41,7 +42,7 @@ export const getIdempotencyService = (): IdempotencyService => {
     const prisma = getPrismaClient();
     const redis = getRedisClient();
     idempotencyService = new IdempotencyService(prisma, redis);
-    console.log('Idempotency service initialized');
+    logger.info("Idempotency service initialized");
   }
   
   return idempotencyService;
@@ -53,7 +54,7 @@ export const getWalletService = (): WalletService => {
     const lock = getLockService();
     const idempotency = getIdempotencyService();
     walletService = new WalletService(prisma, lock, idempotency);
-    console.log('Wallet service initialized');
+    logger.info("Wallet service initialized");
   }
   
   return walletService;
@@ -67,7 +68,7 @@ export const getPaymentService = (): PaymentService => {
     const idempotency = getIdempotencyService();
     const wallet = getWalletService();
     paymentService = new PaymentService(prisma, stripe, lock, idempotency, wallet);
-    console.log('Payment service initialized');
+    logger.info("Payment service initialized");
   }
   
   return paymentService;
@@ -84,7 +85,7 @@ export const closeAllConnections = async (): Promise<void> => {
     await redis.quit();
   }
   
-  console.log('All connections closed');
+  logger.info("All connections closed");
 };
 
 export default {

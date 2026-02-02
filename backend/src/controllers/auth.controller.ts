@@ -5,6 +5,12 @@ import { hashPassword, comparePassword } from "../utils/encryption";
 import { redis } from "../utils/redis";
 import { logger } from "../utils/logger";
 
+interface JwtPayload {
+  userId: string;
+}
+import { emailIntegrationService } from "../services/emailIntegrationService";
+import crypto from "crypto";
+
 export class AuthController {
   async register(req: Request, res: Response) {
     try {
@@ -36,32 +42,32 @@ export class AuthController {
           firstName,
           lastName,
           role,
-        },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          createdAt: true,
+          isActive: false, // User is inactive until email is verified
         },
       });
 
-      // Generate tokens
-      const tokens = this.generateTokens(user.id);
+      // Create verification token
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+      await prisma.verificationToken.create({
+        data: {
+          token: verificationToken,
+          email: user.email,
+          type: "EMAIL_VERIFICATION",
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        },
+      });
 
-      // Store refresh token in Redis
-      await redis.setEx(
-        `refresh_token:${user.id}`,
-        7 * 24 * 60 * 60,
-        tokens.refreshToken,
+      // Send verification email
+      await emailIntegrationService.sendVerificationEmail(
+        user,
+        verificationToken,
       );
 
-      logger.info(`User registered: ${email}`);
+      logger.info(`User registered: ${email}. Verification email sent.`);
 
       res.status(201).json({
-        user,
-        ...tokens,
+        message:
+          "Registration successful. Please check your email to verify your account.",
       });
     } catch (error) {
       logger.error("Registration error:", error);
@@ -110,7 +116,7 @@ export class AuthController {
         tokens.refreshToken,
       );
 
-      const { passwordHash, ...userWithoutPassword } = user;
+      const { ...userWithoutPassword } = user;
 
       logger.info(`User logged in: ${email}`);
 
@@ -130,7 +136,7 @@ export class AuthController {
       const token = authHeader && authHeader.split(" ")[1];
 
       if (token) {
-        const decoded = jwt.decode(token) as any;
+        const decoded: JwtPayload = jwt.decode(token);
         await redis.del(`refresh_token:${decoded.userId}`);
       }
 
@@ -149,7 +155,10 @@ export class AuthController {
         return res.status(401).json({ error: "Refresh token required" });
       }
 
-      const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as any;
+      const decoded: JwtPayload = jwt.verify(
+        refreshToken,
+        process.env.JWT_SECRET!,
+      );
       const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
 
       if (storedToken !== refreshToken) {
@@ -195,6 +204,38 @@ export class AuthController {
     } catch (error) {
       logger.error("Get profile error:", error);
       res.status(500).json({ error: "Failed to get profile" });
+    }
+  }
+
+  async verifyEmail(req: Request, res: Response) {
+    try {
+      const { token } = req.query as { token: string };
+
+      const verificationToken = await prisma.verificationToken.findUnique({
+        where: { token },
+      });
+
+      if (!verificationToken || verificationToken.expiresAt < new Date()) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
+
+      // Activate user
+      await prisma.user.update({
+        where: { email: verificationToken.email },
+        data: { isActive: true },
+      });
+
+      // Delete the token so it can't be used again
+      await prisma.verificationToken.delete({
+        where: { id: verificationToken.id },
+      });
+
+      logger.info(`Email verified for: ${verificationToken.email}`);
+
+      res.json({ message: "Email verified successfully. You can now log in." });
+    } catch (error) {
+      logger.error("Email verification error:", error);
+      res.status(500).json({ error: "Email verification failed" });
     }
   }
 

@@ -9,6 +9,7 @@ declare global {
         role: UserRole;
         isActive: boolean;
       };
+      requestId?: string;
     }
   }
 }

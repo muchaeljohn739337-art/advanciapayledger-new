@@ -1,0 +1,52 @@
+{
+  "workspaceName": "Advancia PayLedger",
+  "projectType": "healthcare-fintech",
+  "techStack": {
+    "backend": ["Node.js", "Express", "TypeScript", "Prisma", "PostgreSQL", "Redis"],
+    "frontend": ["Next.js", "React", "TailwindCSS", "Lucide React"],
+    "database": ["Supabase", "PostgreSQL"],
+    "deployment": ["Vercel", "AWS", "DigitalOcean"],
+    "ai": ["Claude", "Gemini", "OpenAI GPT"]
+  },
+  "supabase": {
+    "projectId": "fvceynqcxfwtbpbugtqr",
+    "projectUrl": "https://fvceynqcxfwtbpbugtqr.supabase.co",
+    "region": "us-east-1"
+  },
+  "github": {
+    "repository": "muchaeljohn739337-art/advanciapayledger-new",
+    "branch": "master"
+  },
+  "aws": {
+    "accountId": "032474760584",
+    "region": "us-east-2"
+  },
+  "features": {
+    "security": {
+      "rls": true,
+      "redisLocks": true,
+      "idempotency": true,
+      "walletService": true,
+      "paymentService": true,
+      "graphqlSecurity": true,
+      "rateLimiting": true
+    },
+    "ai": {
+      "claude": "reasoning-summarization",
+      "gemini": "creative-generation",
+      "openai": "formatting-qa-code"
+    },
+    "integrations": {
+      "stripe": true,
+      "cloudflare": true,
+      "postmark": true,
+      "resend": true
+    }
+  },
+  "deploymentStatus": {
+    "database": "pending",
+    "rls": "pending",
+    "frontend": "pending",
+    "backend": "pending"
+  }
+}

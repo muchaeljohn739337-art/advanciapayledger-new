@@ -4,6 +4,10 @@ import { z } from "zod";
 import { validate } from "../middleware/validate";
 import { authenticateToken } from "../middleware/auth";
 import { authController } from "../controllers/auth.controller";
+import {
+  loginLimiter,
+  registrationLimiter,
+} from "../middleware/authRateLimiters";
 
 const router = Router();
 
@@ -31,9 +35,25 @@ const refreshTokenSchema = z.object({
   }),
 });
 
+const verifyEmailSchema = z.object({
+  query: z.object({
+    token: z.string().min(1),
+  }),
+});
+
 // Routes
-router.post("/register", validate(registerSchema), authController.register);
-router.post("/login", validate(loginSchema), authController.login);
+router.post(
+  "/register",
+  registrationLimiter,
+  validate(registerSchema),
+  authController.register,
+);
+router.post(
+  "/login",
+  loginLimiter,
+  validate(loginSchema),
+  authController.login,
+);
 router.post("/logout", authController.logout);
 router.post(
   "/refresh",
@@ -44,6 +64,11 @@ router.get(
   "/profile",
   authenticateToken,
   authController.getCurrentUser.bind(authController),
+);
+router.get(
+  "/verify-email",
+  validate(verifyEmailSchema),
+  authController.verifyEmail,
 );
 
 export { router as authRoutes };

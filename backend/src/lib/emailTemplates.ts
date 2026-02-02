@@ -8,8 +8,13 @@ export interface EmailTemplate {
   text?: string;
 }
 
+interface InvoiceItem {
+  description: string;
+  amount: number;
+}
+
 export interface TemplateData {
-  [key: string]: any;
+  [key: string]: string | number | boolean | object | InvoiceItem[] | undefined;
 }
 
 // Base template wrapper
@@ -109,6 +114,37 @@ export class EmailTemplates {
       return "";
     }
   };
+
+  static emailVerification(data: TemplateData): EmailTemplate {
+    const content = `
+        <div class="content">
+            <h2>Verify Your Email Address 📧</h2>
+            <p>Hi {{name}},</p>
+            <p>Thanks for signing up for Advancia Pay Ledger! Please click the button below to verify your email address and activate your account.</p>
+
+            <p style="text-align: center; margin: 30px 0;">
+                <a href="{{verificationLink}}" class="button">Verify Email</a>
+            </p>
+
+            <p><strong>Note:</strong> This link will expire in 24 hours for security reasons.</p>
+            <p>If you didn't create an account, please ignore this email.</p>
+        </div>
+    `;
+
+    const variables = {
+      ...data,
+      verificationLink: data.verificationLink,
+    };
+
+    return {
+      subject: "Verify Your Email - Advancia Pay Ledger",
+      html: this.replaceVariables(
+        baseTemplate(content, "Verify Your Email"),
+        variables,
+      ),
+      text: `Verify your email for Advancia Pay Ledger. Visit: ${variables.verificationLink}`,
+    };
+  }
 
   static welcome(data: TemplateData): EmailTemplate {
     const content = `
@@ -264,24 +300,33 @@ export class EmailTemplates {
 
     const variables = {
       ...data,
-      resetLink: data.resetLink || `${process.env.FRONTEND_URL || "https://advanciapayledger.com"}/reset-password?token=${data.token}`,
+      resetLink:
+        data.resetLink ||
+        `${process.env.FRONTEND_URL}/reset-password?token=${data.token}`,
     };
 
     return {
       subject: "Password Reset - Advancia Pay Ledger",
-      html: this.replaceVariables(baseTemplate(content, "Password Reset"), variables),
+      html: this.replaceVariables(
+        baseTemplate(content, "Password Reset"),
+        variables,
+      ),
       text: `Password reset requested for your account. Visit: ${variables.resetLink}`,
     };
   }
 
   static invoice(data: TemplateData): EmailTemplate {
-    const items = data.items || [];
-    const itemsHtml = items.map((item: any) => `
+    const items = (data.items as InvoiceItem[]) || [];
+    const itemsHtml = items
+      .map(
+        (item: InvoiceItem) => `
         <tr>
             <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.description}</td>
             <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${item.amount.toFixed(2)}</td>
         </tr>
-    `).join('');
+    `,
+      )
+      .join("");
 
     const content = `
         <div class="content">
@@ -302,7 +347,7 @@ export class EmailTemplates {
                 <tfoot>
                     <tr>
                         <td style="padding: 12px; font-weight: bold; border-top: 2px solid #ddd;">Total:</td>
-                        <td style="padding: 12px; font-weight: bold; text-align: right; border-top: 2px solid #ddd;">${{total}}</td>
+                        <td style="padding: 12px; font-weight: bold; text-align: right; border-top: 2px solid #ddd;">$${data.total}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -320,8 +365,51 @@ export class EmailTemplates {
 
     return {
       subject: `Invoice ${data.invoiceNumber} - Advancia Pay Ledger`,
-      html: this.replaceVariables(baseTemplate(content, `Invoice ${data.invoiceNumber}`), variables),
+      html: this.replaceVariables(
+        baseTemplate(content, `Invoice ${data.invoiceNumber}`),
+        variables,
+      ),
       text: `Invoice ${data.invoiceNumber} for $${data.total}. Total items: ${items.length}`,
+    };
+  }
+
+  static accountantTransferNotification(data: TemplateData): EmailTemplate {
+    const content = `
+        <div class="content">
+            <h2>Crypto Transfer Executed</h2>
+            <p>Hi {{accountantName}},</p>
+            <p>This is an automated notification that a cryptocurrency transfer has been executed from the platform's treasury wallet by an administrator.</p>
+
+            <h3>Transaction Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Date:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">{{date}}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">{{amount}} {{token}}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Network:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">{{network}}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Recipient:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">{{recipient}}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Memo:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">{{memo}}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Transaction Hash:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">{{txHash}}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Executed By:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">{{adminEmail}}</td></tr>
+            </table>
+
+            <p style="text-align: center; margin: 30px 0;">
+                <a href="{{explorerUrl}}" class="button">View on Explorer</a>
+            </p>
+        </div>
+    `;
+
+    const variables = {
+      ...data,
+      date: new Date().toLocaleString(),
+      explorerUrl: `https://solscan.io/tx/${data.txHash}`,
+    };
+
+    return {
+      subject: `[Action Required] Crypto Transfer Executed: ${data.amount} ${data.token}`,
+      html: this.replaceVariables(
+        baseTemplate(content, "Crypto Transfer Notification"),
+        variables,
+      ),
+      text: `A transfer of ${data.amount} ${data.token} to ${data.recipient} was executed. TX Hash: ${data.txHash}`,
     };
   }
 }

@@ -3,7 +3,19 @@
  * Handles blockchain interactions, crypto payments, and wallet authentication
  */
 
-import { ethers } from "ethers";
+import { ethers, LogDescription } from "ethers";
+import { logger } from "../utils/logger";
+
+// Define a type for the token details
+interface TokenDetail {
+  symbol: string;
+  decimals: number;
+  address: string | null;
+  name: string;
+  network?: string;
+  polygonAddress?: string;
+  bscAddress?: string;
+}
 
 // RPC Provider Configuration with Cloudflare Gateway
 const RPC_PROVIDERS = [
@@ -30,7 +42,7 @@ const RPC_PROVIDERS = [
 ];
 
 // Supported tokens for payments across different networks
-const SUPPORTED_TOKENS = {
+const SUPPORTED_TOKENS: { [key: string]: TokenDetail } = {
   ETH: {
     symbol: "ETH",
     decimals: 18,
@@ -100,9 +112,9 @@ class Web3Service {
           throw new Error("No provider configuration found");
         }
 
-        console.log(
-          `[Web3] Attempting connection to ${providerConfig.name}...`,
-        );
+        logger.info("Web3 attempting provider connection", {
+          provider: providerConfig.name,
+        });
 
         const provider = new ethers.JsonRpcProvider(providerConfig.url);
 
@@ -111,8 +123,7 @@ class Web3Service {
 
         this.provider = provider;
         this.logConnection(providerConfig.name, true);
-
-        console.log(`[Web3] ✓ Connected to ${providerConfig.name}`);
+        logger.info("Web3 connected", { provider: providerConfig.name });
         return provider;
       } catch (error) {
         const providerConfig = RPC_PROVIDERS[this.currentProviderIndex];
@@ -120,10 +131,10 @@ class Web3Service {
           error instanceof Error ? error.message : "Unknown error";
         if (providerConfig) {
           this.logConnection(providerConfig.name, false, errorMessage);
-          console.error(
-            `[Web3] ✗ Failed to connect to ${providerConfig.name}:`,
-            errorMessage,
-          );
+          logger.error("Web3 provider connection failed", {
+            provider: providerConfig.name,
+            error: errorMessage,
+          });
         }
 
         // Try next provider
@@ -132,9 +143,10 @@ class Web3Service {
         attempts++;
 
         if (attempts < maxAttempts) {
-          console.log(
-            `[Web3] Retrying with next provider (attempt ${attempts + 1}/${maxAttempts})...`,
-          );
+          logger.warn("Web3 retrying with next provider", {
+            attempt: attempts + 1,
+            maxAttempts,
+          });
           await this.delay(1000); // Wait 1 second before retry
         }
       }
@@ -165,7 +177,7 @@ class Web3Service {
       const recoveredAddress = ethers.verifyMessage(message, signature);
       return recoveredAddress.toLowerCase() === address.toLowerCase();
     } catch (error) {
-      console.error("[Web3] Signature verification failed:", error);
+      logger.error("Web3 signature verification failed", { error });
       return false;
     }
   }
@@ -187,9 +199,8 @@ class Web3Service {
     tokenSymbol: string,
     networkName: string = "Ethereum Mainnet",
   ): Promise<string> {
-    const token = SUPPORTED_TOKENS[
-      tokenSymbol as keyof typeof SUPPORTED_TOKENS
-    ] as any;
+    const token =
+      SUPPORTED_TOKENS[tokenSymbol as keyof typeof SUPPORTED_TOKENS];
     if (!token) {
       throw new Error(`Unsupported token: ${tokenSymbol}`);
     }
@@ -245,7 +256,7 @@ class Web3Service {
         gasUsed: receipt.gasUsed.toString(),
       };
     } catch (error) {
-      console.error("[Web3] Transaction monitoring error:", error);
+      logger.error("Web3 transaction monitoring error", { error });
       throw error;
     }
   }
@@ -286,9 +297,8 @@ class Web3Service {
       }
 
       // Verify ERC20 token payment
-      const token = SUPPORTED_TOKENS[
-        expectedToken as keyof typeof SUPPORTED_TOKENS
-      ] as any;
+      const token =
+        SUPPORTED_TOKENS[expectedToken as keyof typeof SUPPORTED_TOKENS];
       if (!token) {
         return false;
       }
@@ -301,7 +311,7 @@ class Web3Service {
         token.bscAddress,
       ].filter(Boolean);
 
-      let transferEvent: any = null;
+      let transferEvent: LogDescription | null = null;
       for (const tokenAddr of possibleAddresses) {
         const contract = new ethers.Contract(tokenAddr, ERC20_ABI, provider);
         transferEvent = receipt.logs
@@ -333,7 +343,7 @@ class Web3Service {
         parseFloat(amountReceived) >= amountExpected
       );
     } catch (error) {
-      console.error("[Web3] Payment verification error:", error);
+      logger.error("Web3 payment verification error", { error });
       return false;
     }
   }

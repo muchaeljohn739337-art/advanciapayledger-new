@@ -1,0 +1,53 @@
+name: Snyk Security Scan (Free Tier)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  snyk-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Run Snyk to check Backend vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=backend/package.json
+      
+      - name: Run Snyk to check Frontend vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=frontend/package.json
+      
+      - name: Monitor Backend Dependencies
+        working-directory: backend
+        run: |
+          npm install -g snyk
+          snyk auth ${{ secrets.SNYK_TOKEN }}
+          snyk monitor --project-name=advancia-backend
+        continue-on-error: true
+      
+      - name: Monitor Frontend Dependencies
+        working-directory: frontend
+        run: |
+          snyk auth ${{ secrets.SNYK_TOKEN }}
+          snyk monitor --project-name=advancia-frontend
+        continue-on-error: true

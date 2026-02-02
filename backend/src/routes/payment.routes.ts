@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getPaymentService } from '../config/services';
 import { getStripeClient, getWebhookSecret } from '../config/stripe';
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -70,7 +71,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     res.json(result);
   } catch (error: any) {
-    console.error('Payment processing error:', error);
+    logger.error("Payment processing error", { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -115,7 +116,7 @@ router.post('/refund', async (req: Request, res: Response) => {
 
     res.json(result);
   } catch (error: any) {
-    console.error('Refund processing error:', error);
+    logger.error("Refund processing error", { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -139,7 +140,9 @@ router.post('/webhook/stripe', async (req: Request, res: Response) => {
         webhookSecret
       );
     } catch (err: any) {
-      console.error('Webhook signature verification failed:', err.message);
+      logger.error("Webhook signature verification failed", {
+        error: err.message,
+      });
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
@@ -148,7 +151,7 @@ router.post('/webhook/stripe', async (req: Request, res: Response) => {
 
     res.json({ received: true });
   } catch (error: any) {
-    console.error('Webhook processing error:', error);
+    logger.error("Webhook processing error", { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });

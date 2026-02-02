@@ -44,7 +44,7 @@ router.get('/', authenticateToken, async (req, res) => {
     if (startDate) filters.startDate = new Date(startDate as string);
     if (endDate) filters.endDate = new Date(endDate as string);
 
-    const bookings = await bookingService.getBookings(filters);
+    const bookings = await bookingService.getBookings(req.user!, filters);
 
     res.json({
       success: true,
