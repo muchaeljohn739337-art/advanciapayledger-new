@@ -130,6 +130,46 @@ class UserController {
       res.status(500).json({ error: "Failed to delete user" });
     }
   }
+
+  async approveUser(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!Object.values(UserStatus).includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      const user = await prisma.user.findUnique({ where: { id } });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (user.status === status) {
+        return res.status(400).json({ error: "User already has this status" });
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: { status },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          status: true,
+        },
+      });
+
+      logger.info(`User status updated to ${status}: ${updatedUser.email}`);
+      res.json(updatedUser);
+    } catch (error) {
+      logger.error("Error approving user:", error);
+      res.status(500).json({ error: "Failed to update user status" });
+    }
+  }
 }
 
 export const userController = new UserController();

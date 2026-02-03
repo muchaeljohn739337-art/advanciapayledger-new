@@ -31,6 +31,8 @@ model User {
   auditLogs         AuditLog[]
   notifications     Notification[]
   oauthProviders    OAuthProvider[]
+  wallets           Wallet[]
+  virtualCards      VirtualCard[]
   
   @@index([email])
   @@index([facilityId])
@@ -282,6 +284,8 @@ model Transaction {
   facilityId            String
   patientId             String?
   invoiceId             String?
+  virtualCardId         String?
+  walletId              String?
   
   // Transaction Details
   type                  TransactionType
@@ -329,11 +333,15 @@ model Transaction {
   facility              Facility            @relation(fields: [facilityId], references: [id])
   patient               Patient?            @relation(fields: [patientId], references: [id])
   invoice               Invoice?            @relation(fields: [invoiceId], references: [id])
+  virtualCard           VirtualCard?        @relation(fields: [virtualCardId], references: [id])
+  wallet                Wallet?             @relation(fields: [walletId], references: [id])
   refunds               Refund[]
   
   @@index([facilityId])
   @@index([patientId])
   @@index([invoiceId])
+  @@index([virtualCardId])
+  @@index([walletId])
   @@index([status])
   @@index([createdAt])
   @@map("transactions")
@@ -680,6 +688,83 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// --- Virtual Cards ---
+model VirtualCard {
+  id                String              @id @default(uuid())
+  userId            String
+  walletId          String
+  
+  // Security: Sensitive data is ALWAYS hashed/encrypted
+  cardNumberHash    String              // Hashed card number
+  cvvHash           String              // Hashed CVV
+  expiryDate        DateTime
+  
+  // Display fields (safe to expose)
+  cardLast4         String?             // Last 4 digits for display
+  cardBrand         String?             // VISA, Mastercard, etc.
+  
+  // Limits & Status
+  status            VirtualCardStatus   @default(ACTIVE)
+  dailyLimit        Decimal             @default(1000) @db.Decimal(10, 2)
+  monthlyLimit      Decimal             @default(5000) @db.Decimal(10, 2)
+  currency          String              @default("USD")
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  user              User                @relation(fields: [userId], references: [id])
+  wallet            Wallet              @relation(fields: [walletId], references: [id])
+  transactions      Transaction[]
+  
+  @@index([userId])
+  @@index([walletId])
+  @@index([status])
+  @@map("virtual_cards")
+}
+
+enum VirtualCardStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  EXPIRED
+  CANCELLED
+}
+
+// --- Wallets ---
+model Wallet {
+  id                String            @id @default(uuid())
+  userId            String
+  
+  // Balance
+  balance           Decimal           @default(0) @db.Decimal(20, 8)
+  currency          String            @default("USD")
+  
+  // Crypto Support
+  solanaAddress     String?           @unique
+  ethereumAddress  String?           @unique
+  
+  status            WalletStatus      @default(ACTIVE)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Relations
+  user              User              @relation(fields: [userId], references: [id])
+  virtualCards      VirtualCard[]
+  transactions      Transaction[]
+  
+  @@index([userId])
+  @@index([status])
+  @@map("wallets")
+}
+
+enum WalletStatus {
+  ACTIVE
+  SUSPENDED
+  FROZEN
+  CLOSED
 }
 
 enum NotificationType {

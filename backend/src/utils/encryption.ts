@@ -1,5 +1,6 @@
-import crypto from "crypto";
-import dotenv from "dotenv";
+import * as crypto from "crypto";
+import * as dotenv from "dotenv";
+import * as bcrypt from "bcryptjs";
 import { logger } from "./logger";
 
 dotenv.config();
@@ -24,12 +25,12 @@ export const encrypt = (text: string): EncryptedData => {
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipher(ALGORITHM, key);
     cipher.setAAD(Buffer.from("advancia-payledger", "utf8"));
-    
+
     let encrypted = cipher.update(text, "utf8", "hex");
     encrypted += cipher.final("hex");
-    
+
     const tag = cipher.getAuthTag();
-    
+
     return {
       encrypted,
       iv: iv.toString("hex"),
@@ -46,10 +47,10 @@ export const decrypt = (encryptedData: EncryptedData): string => {
     const decipher = crypto.createDecipher(ALGORITHM, key);
     decipher.setAAD(Buffer.from("advancia-payledger", "utf8"));
     decipher.setAuthTag(Buffer.from(encryptedData.tag, "hex"));
-    
+
     let decrypted = decipher.update(encryptedData.encrypted, "hex", "utf8");
     decrypted += decipher.final("utf8");
-    
+
     return decrypted;
   } catch (error) {
     logger.error("Decryption error:", error);
@@ -58,12 +59,18 @@ export const decrypt = (encryptedData: EncryptedData): string => {
 };
 
 export const hashPassword = async (password: string): Promise<string> => {
-  const bcrypt = require("bcryptjs");
   const saltRounds = 12;
   return bcrypt.hash(password, saltRounds);
 };
 
-export const comparePassword = async (password: string, hash: string): Promise<boolean> => {
-  const bcrypt = require("bcryptjs");
+export const comparePassword = async (
+  password: string,
+  hash: string,
+): Promise<boolean> => {
   return bcrypt.compare(password, hash);
+};
+
+export const hash = async (data: string): Promise<string> => {
+  const saltRounds = 12;
+  return bcrypt.hash(data, saltRounds);
 };

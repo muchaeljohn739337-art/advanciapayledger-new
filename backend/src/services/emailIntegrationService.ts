@@ -63,7 +63,7 @@ type AccountantTransferData = TemplateData & {
 
 class EmailIntegrationService {
   /**
-   * Send welcome email to new user
+   * Send verification email to new user
    */
   async sendVerificationEmail(
     user: User,

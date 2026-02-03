@@ -4,12 +4,12 @@ import { prisma } from "../utils/prisma";
 import { hashPassword, comparePassword } from "../utils/encryption";
 import { redis } from "../utils/redis";
 import { logger } from "../utils/logger";
+import { emailIntegrationService } from "../services/emailIntegrationService";
+import { UserRole, UserStatus } from "@prisma/client";
 
 interface JwtPayload {
   userId: string;
 }
-import { emailIntegrationService } from "../services/emailIntegrationService";
-import crypto from "crypto";
 
 export class AuthController {
   async register(req: Request, res: Response) {
@@ -19,10 +19,9 @@ export class AuthController {
         password,
         firstName,
         lastName,
-        role = "PATIENT",
+        role = UserRole.PATIENT,
       } = req.body;
 
-      // Check if user already exists
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
@@ -31,36 +30,26 @@ export class AuthController {
         return res.status(400).json({ error: "User already exists" });
       }
 
-      // Hash password
-      const hashedPassword = await hashPassword(password);
+      const passwordHash = await hashPassword(password);
 
-      // Create user and wallet in a single transaction
       const user = await prisma.user.create({
         data: {
           email,
-          passwordHash: hashedPassword,
+          passwordHash,
           firstName,
           lastName,
           role,
-          isActive: false, // User is inactive until email is verified
-          wallets: {
-            create: {},
-          },
+          status: UserStatus.PENDING_VERIFICATION,
+          emailVerified: false,
         },
       });
 
-      // Create verification token
-      const verificationToken = crypto.randomBytes(32).toString("hex");
-      await prisma.verificationToken.create({
-        data: {
-          token: verificationToken,
-          email: user.email,
-          type: "EMAIL_VERIFICATION",
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        },
-      });
+      const verificationToken = jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env.JWT_SECRET!,
+        { expiresIn: "24h" },
+      );
 
-      // Send verification email
       await emailIntegrationService.sendVerificationEmail(
         user,
         verificationToken,
@@ -82,44 +71,31 @@ export class AuthController {
     try {
       const { email, password } = req.body;
 
-      // Find user
       const user = await prisma.user.findUnique({
         where: { email },
-        select: {
-          id: true,
-          email: true,
-          passwordHash: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          isActive: true,
-          approvalStatus: true,
-        },
       });
 
-      if (!user || !user.isActive) {
-        return res
-          .status(401)
-          .json({ error: "Invalid credentials or email not verified." });
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      if (user.approvalStatus === "PENDING") {
+      if (!user.emailVerified) {
+        return res.status(403).json({ error: "Email not verified" });
+      }
+
+      if (
+        user.status === UserStatus.SUSPENDED ||
+        user.status === UserStatus.INACTIVE
+      ) {
+        return res.status(403).json({ error: "Account is not active" });
+      }
+
+      if (user.status === UserStatus.PENDING_VERIFICATION) {
         return res
           .status(403)
-          .json({
-            error: "Your account is pending approval from an administrator.",
-          });
+          .json({ error: "Account is pending verification" });
       }
 
-      if (user.approvalStatus === "REJECTED") {
-        return res
-          .status(403)
-          .json({
-            error: "Your account has been rejected. Please contact support.",
-          });
-      }
-
-      // Verify password
       const isValidPassword = await comparePassword(
         password,
         user.passwordHash,
@@ -128,17 +104,15 @@ export class AuthController {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      // Generate tokens
       const tokens = this.generateTokens(user.id);
 
-      // Store refresh token in Redis
       await redis.setEx(
         `refresh_token:${user.id}`,
         7 * 24 * 60 * 60,
         tokens.refreshToken,
       );
 
-      const { ...userWithoutPassword } = user;
+      const { passwordHash, ...userWithoutPassword } = user;
 
       logger.info(`User logged in: ${email}`);
 
@@ -158,8 +132,10 @@ export class AuthController {
       const token = authHeader && authHeader.split(" ")[1];
 
       if (token) {
-        const decoded: JwtPayload = jwt.decode(token);
-        await redis.del(`refresh_token:${decoded.userId}`);
+        const decoded: JwtPayload = jwt.decode(token) as JwtPayload;
+        if (decoded) {
+          await redis.del(`refresh_token:${decoded.userId}`);
+        }
       }
 
       res.json({ message: "Logged out successfully" });
@@ -180,7 +156,8 @@ export class AuthController {
       const decoded: JwtPayload = jwt.verify(
         refreshToken,
         process.env.JWT_SECRET!,
-      );
+      ) as JwtPayload;
+
       const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
 
       if (storedToken !== refreshToken) {
@@ -189,7 +166,6 @@ export class AuthController {
 
       const tokens = this.generateTokens(decoded.userId);
 
-      // Update refresh token in Redis
       await redis.setEx(
         `refresh_token:${decoded.userId}`,
         7 * 24 * 60 * 60,
@@ -213,6 +189,7 @@ export class AuthController {
           firstName: true,
           lastName: true,
           role: true,
+          status: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -233,29 +210,41 @@ export class AuthController {
     try {
       const { token } = req.query as { token: string };
 
-      const verificationToken = await prisma.verificationToken.findUnique({
-        where: { token },
-      });
-
-      if (!verificationToken || verificationToken.expiresAt < new Date()) {
-        return res.status(400).json({ error: "Invalid or expired token" });
+      if (!token) {
+        return res
+          .status(400)
+          .json({ error: "Verification token is required" });
       }
 
-      // Activate user
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+        userId: string;
+        email: string;
+      };
+
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+      });
+
+      if (!user || user.email !== decoded.email) {
+        return res.status(400).json({ error: "Invalid verification token" });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ error: "Email already verified" });
+      }
+
       await prisma.user.update({
-        where: { email: verificationToken.email },
-        data: { isActive: true },
+        where: { id: user.id },
+        data: { emailVerified: true, status: UserStatus.ACTIVE },
       });
 
-      // Delete the token so it can't be used again
-      await prisma.verificationToken.delete({
-        where: { id: verificationToken.id },
-      });
-
-      logger.info(`Email verified for: ${verificationToken.email}`);
+      logger.info(`Email verified for: ${user.email}`);
 
       res.json({ message: "Email verified successfully. You can now log in." });
     } catch (error) {
+      if (error instanceof jwt.JsonWebTokenError) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
       logger.error("Email verification error:", error);
       res.status(500).json({ error: "Email verification failed" });
     }
