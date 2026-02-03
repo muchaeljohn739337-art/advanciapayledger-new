@@ -3,6 +3,7 @@
 
 import cors from 'cors';
 import { Request, Response, NextFunction } from 'express';
+import { logger } from "../utils/logger";
 
 // ===========================================
 // CORS ALLOWED ORIGINS
@@ -53,7 +54,7 @@ const corsOptions: cors.CorsOptions = {
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`CORS blocked request from origin: ${origin}`);
+      logger.warn(`CORS blocked request from origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },

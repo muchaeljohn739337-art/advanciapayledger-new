@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
 import { hashPassword } from '../utils/encryption';
 import { logger } from '../utils/logger';
+import { UserRole, UserStatus } from "@prisma/client";
 
 class UserController {
   async getAllUsers(req: Request, res: Response) {
@@ -12,42 +13,57 @@ class UserController {
           email: true,
           firstName: true,
           lastName: true,
+          phoneNumber: true,
           role: true,
-          isActive: true,
+          status: true,
+          facilityId: true,
           createdAt: true,
         },
       });
       res.json(users);
     } catch (error) {
-      logger.error('Error fetching users:', error);
-      res.status(500).json({ error: 'Failed to fetch users' });
+      logger.error("Error fetching users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
     }
   }
 
   async createUser(req: Request, res: Response) {
     try {
-      const { email, password, firstName, lastName, role } = req.body;
+      const {
+        email,
+        password,
+        firstName,
+        lastName,
+        role,
+        phoneNumber,
+        facilityId,
+        status,
+      } = req.body;
 
       if (!email || !password || !firstName || !lastName || !role) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        return res.status(400).json({ error: "Missing required fields" });
       }
 
       const existingUser = await prisma.user.findUnique({ where: { email } });
 
       if (existingUser) {
-        return res.status(400).json({ error: 'User with this email already exists' });
+        return res
+          .status(400)
+          .json({ error: "User with this email already exists" });
       }
 
-      const hashedPassword = await hashPassword(password);
+      const passwordHash = await hashPassword(password);
 
       const newUser = await prisma.user.create({
         data: {
           email,
-          passwordHash: hashedPassword,
+          passwordHash,
           firstName,
           lastName,
-          role,
-          isActive: true,
+          role: role as UserRole,
+          phoneNumber,
+          facilityId,
+          status: (status as UserStatus) || UserStatus.PENDING_VERIFICATION,
         },
         select: {
           id: true,
@@ -55,29 +71,33 @@ class UserController {
           firstName: true,
           lastName: true,
           role: true,
+          status: true,
         },
       });
 
       logger.info(`User created by admin: ${email}`);
       res.status(201).json(newUser);
     } catch (error) {
-      logger.error('Error creating user:', error);
-      res.status(500).json({ error: 'Failed to create user' });
+      logger.error("Error creating user:", error);
+      res.status(500).json({ error: "Failed to create user" });
     }
   }
 
   async updateUser(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { firstName, lastName, role, isActive } = req.body;
+      const { firstName, lastName, role, status, phoneNumber, facilityId } =
+        req.body;
 
       const updatedUser = await prisma.user.update({
         where: { id },
         data: {
           firstName,
           lastName,
-          role,
-          isActive,
+          role: role as UserRole,
+          status: status as UserStatus,
+          phoneNumber,
+          facilityId,
         },
         select: {
           id: true,
@@ -85,15 +105,15 @@ class UserController {
           firstName: true,
           lastName: true,
           role: true,
-          isActive: true,
+          status: true,
         },
       });
 
       logger.info(`User updated: ${updatedUser.email}`);
       res.json(updatedUser);
     } catch (error) {
-      logger.error('Error updating user:', error);
-      res.status(500).json({ error: 'Failed to update user' });
+      logger.error("Error updating user:", error);
+      res.status(500).json({ error: "Failed to update user" });
     }
   }
 
@@ -106,8 +126,8 @@ class UserController {
       logger.info(`User deleted: ${id}`);
       res.status(204).send();
     } catch (error) {
-      logger.error('Error deleting user:', error);
-      res.status(500).json({ error: 'Failed to delete user' });
+      logger.error("Error deleting user:", error);
+      res.status(500).json({ error: "Failed to delete user" });
     }
   }
 }

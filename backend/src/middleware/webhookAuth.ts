@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
+import { logger } from "../utils/logger";
 
 /**
  * Validate Stripe webhook signatures
@@ -32,7 +33,7 @@ export const validateWebhookSignature = (
 
     next();
   } catch (error) {
-    console.error("Webhook signature validation error:", error);
+    logger.error("Webhook signature validation error", { error });
     res.status(400).json({ error: "Webhook signature validation failed" });
   }
 };

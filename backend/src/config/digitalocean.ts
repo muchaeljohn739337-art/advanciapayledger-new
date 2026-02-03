@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import dotenv from 'dotenv';
+import { logger } from "../utils/logger";
 
 dotenv.config();
 
@@ -34,7 +35,11 @@ export async function uploadToSpaces(
     const fileUrl = `${process.env.DO_SPACES_ENDPOINT}/${BUCKET_NAME}/${fileName}`;
     return fileUrl;
   } catch (error) {
-    console.error('Error uploading to Spaces:', error);
+    logger.error("Error uploading to Spaces", {
+      error,
+      fileName,
+      bucket: BUCKET_NAME,
+    });
     throw new Error('Failed to upload file to Digital Ocean Spaces');
   }
 }
@@ -52,7 +57,11 @@ export async function deleteFromSpaces(fileUrl: string): Promise<void> {
 
     await spacesClient.send(command);
   } catch (error) {
-    console.error('Error deleting from Spaces:', error);
+    logger.error("Error deleting from Spaces", {
+      error,
+      fileUrl,
+      bucket: BUCKET_NAME,
+    });
     throw new Error('Failed to delete file from Digital Ocean Spaces');
   }
 }

@@ -1,4 +1,5 @@
 import * as EmailTemplates from "../lib/emailTemplates";
+import type { TemplateData } from "../lib/emailTemplates";
 import { emailService } from "../lib/emailService";
 import { logger } from "../utils/logger";
 
@@ -36,6 +37,29 @@ interface LoginAttempt {
   userAgent?: string;
   timestamp: Date;
 }
+
+type InvoiceItemData = { description: string; amount: number };
+interface InvoicePayload {
+  email: string;
+  name: string;
+  invoice: {
+    invoiceNumber: string;
+    invoiceId: string;
+    total: number;
+    items: InvoiceItemData[];
+  };
+}
+
+type AccountantTransferData = TemplateData & {
+  accountantName: string;
+  amount: number;
+  token: string;
+  network: string;
+  recipient: string;
+  memo?: string;
+  txHash: string;
+  adminEmail: string;
+};
 
 class EmailIntegrationService {
   /**
@@ -332,7 +356,9 @@ class EmailIntegrationService {
     }
   }
 
-  async sendAccountantTransferNotification(data: any): Promise<void> {
+  async sendAccountantTransferNotification(
+    data: AccountantTransferData,
+  ): Promise<void> {
     try {
       const email = EmailTemplates.accountantTransferNotification(data);
 
@@ -373,25 +399,33 @@ class EmailIntegrationService {
   /**
    * Queue email for later sending (using Bull Queue)
    */
+  async queueEmail(type: "welcome", data: User): Promise<void>;
+  async queueEmail(type: "transaction", data: Transaction): Promise<void>;
+  async queueEmail(type: "security", data: LoginAttempt): Promise<void>;
+  async queueEmail(type: "invoice", data: InvoicePayload): Promise<void>;
   async queueEmail(
     type: "welcome" | "transaction" | "security" | "invoice",
-    data: any,
+    data: unknown,
   ): Promise<void> {
-    // In production, use Bull Queue with Redis
-    // For now, send immediately
     switch (type) {
       case "welcome":
-        await this.sendWelcomeEmail(data);
+        await this.sendWelcomeEmail(data as User);
         break;
       case "transaction":
-        await this.sendTransactionNotification(data);
+        await this.sendTransactionNotification(data as Transaction);
         break;
       case "security":
-        await this.sendSecurityAlert(data);
+        await this.sendSecurityAlert(data as LoginAttempt);
         break;
-      case "invoice":
-        await this.sendInvoiceEmail(data.email, data.name, data.invoice);
+      case "invoice": {
+        const payload = data as InvoicePayload;
+        await this.sendInvoiceEmail(
+          payload.email,
+          payload.name,
+          payload.invoice,
+        );
         break;
+      }
     }
   }
 }

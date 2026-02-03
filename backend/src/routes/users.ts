@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { prisma } from '../app';
+import { prisma } from "../utils/prisma";
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import { UserStatus } from "@prisma/client";
 
 const router = Router();
 
@@ -14,16 +15,18 @@ router.get('/me', authenticate, async (req, res) => {
       where: { id: userId },
       select: {
         id: true,
-        supabaseId: true,
         email: true,
         firstName: true,
         lastName: true,
+        phoneNumber: true,
         role: true,
-        isActive: true,
-        twoFactorEnabled: true,
+        status: true,
+        emailVerified: true,
+        totpEnabled: true,
+        facilityId: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
 
     if (!user) {
@@ -41,24 +44,26 @@ router.get('/me', authenticate, async (req, res) => {
 router.put('/me', authenticate, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { firstName, lastName } = req.body;
+    const { firstName, lastName, phoneNumber } = req.body;
 
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
         ...(firstName && { firstName }),
-        ...(lastName && { lastName })
+        ...(lastName && { lastName }),
+        ...(phoneNumber && { phoneNumber }),
       },
       select: {
         id: true,
         email: true,
         firstName: true,
         lastName: true,
+        phoneNumber: true,
         role: true,
-        isActive: true,
+        status: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
 
     res.json(updated);
@@ -76,9 +81,9 @@ router.get('/me/settings', authenticate, async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
-        twoFactorEnabled: true,
-        // Add other settings fields as needed
-      }
+        totpEnabled: true,
+        emailVerified: true,
+      },
     });
 
     if (!user) {
@@ -96,16 +101,16 @@ router.get('/me/settings', authenticate, async (req, res) => {
 router.put('/me/settings', authenticate, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { twoFactorEnabled } = req.body;
+    const { totpEnabled } = req.body;
 
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...(typeof twoFactorEnabled === 'boolean' && { twoFactorEnabled })
+        ...(typeof totpEnabled === "boolean" && { totpEnabled }),
       },
       select: {
-        twoFactorEnabled: true
-      }
+        totpEnabled: true,
+      },
     });
 
     res.json(updated);
@@ -123,24 +128,24 @@ router.delete('/me', authenticate, async (req, res) => {
     // Soft delete - mark as inactive
     await prisma.user.update({
       where: { id: userId },
-      data: { isActive: false }
+      data: { status: UserStatus.INACTIVE },
     });
 
     // Log account deletion
     await prisma.auditLog.create({
       data: {
         userId,
-        action: 'DELETE',
-        resource: 'user',
-        resourceId: userId,
-        details: 'User account deleted'
-      }
+        action: "ACCOUNT_DEACTIVATED",
+        entityType: "User",
+        entityId: userId,
+        metadata: { reason: "User self-deleted account" },
+      },
     });
 
-    res.json({ message: 'Account deleted successfully' });
+    res.json({ message: "Account deactivated successfully" });
   } catch (error) {
     logger.error('Delete user account error:', error);
-    res.status(500).json({ error: 'Failed to delete account' });
+    res.status(500).json({ error: "Failed to deactivate account" });
   }
 });
 

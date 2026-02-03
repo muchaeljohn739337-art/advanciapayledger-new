@@ -34,7 +34,7 @@ export class AuthController {
       // Hash password
       const hashedPassword = await hashPassword(password);
 
-      // Create user
+      // Create user and wallet in a single transaction
       const user = await prisma.user.create({
         data: {
           email,
@@ -43,6 +43,9 @@ export class AuthController {
           lastName,
           role,
           isActive: false, // User is inactive until email is verified
+          wallets: {
+            create: {},
+          },
         },
       });
 
@@ -90,11 +93,30 @@ export class AuthController {
           lastName: true,
           role: true,
           isActive: true,
+          approvalStatus: true,
         },
       });
 
       if (!user || !user.isActive) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        return res
+          .status(401)
+          .json({ error: "Invalid credentials or email not verified." });
+      }
+
+      if (user.approvalStatus === "PENDING") {
+        return res
+          .status(403)
+          .json({
+            error: "Your account is pending approval from an administrator.",
+          });
+      }
+
+      if (user.approvalStatus === "REJECTED") {
+        return res
+          .status(403)
+          .json({
+            error: "Your account has been rejected. Please contact support.",
+          });
       }
 
       // Verify password

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
 import { uploadToSpaces, deleteFromSpaces } from '../config/digitalocean';
+import { logger } from "../utils/logger";
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -45,7 +46,7 @@ export const uploadFile = async (req: Request, res: Response) => {
       mimetype: req.file.mimetype
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    logger.error("Upload error", { error });
     res.status(500).json({ error: 'Failed to upload file' });
   }
 };
@@ -65,7 +66,7 @@ export const deleteFile = async (req: Request, res: Response) => {
       message: 'File deleted successfully'
     });
   } catch (error) {
-    console.error('Delete error:', error);
+    logger.error("Delete error", { error });
     res.status(500).json({ error: 'Failed to delete file' });
   }
 };

@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Request } from 'express';
+import { logger } from "../utils/logger";
 
 interface SecurityConfig {
   maxDepth: number;
@@ -174,12 +175,13 @@ export class GraphQLSecurityMiddleware {
     const query = req.body?.query || '';
     const variables = req.body?.variables || {};
     
-    console.log({
+    logger.info("GraphQL query", {
       timestamp: new Date().toISOString(),
       userId,
       ip: req.ip,
       query: query.substring(0, 500),
       variables: JSON.stringify(variables).substring(0, 200),
+      requestId: (req as any).requestId,
     });
   }
 }

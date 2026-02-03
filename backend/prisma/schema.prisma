@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,263 +7,446 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User Management
-enum UserApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
+// --- User Management & Authentication ---
 model User {
-  id               String   @id @default(uuid())
-  supabaseId       String?  @unique @map("supabase_id")
-  email            String   @unique
-  passwordHash     String?  @map("password_hash")
-  firstName        String?  @map("first_name")
-  lastName         String?  @map("last_name")
-  role             UserRole @default(PATIENT)
-  isActive         Boolean  @default(true) @map("is_active")
-  approvalStatus   UserApprovalStatus @default(PENDING) @map("approval_status")
-  twoFactorEnabled Boolean  @default(false) @map("two_factor_enabled")
-  twoFactorSecret  String?  @map("two_factor_secret")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String
+  firstName         String
+  lastName          String
+  phoneNumber       String?
+  role              UserRole
+  status            UserStatus @default(ACTIVE)
+  emailVerified     Boolean   @default(false)
+  totpSecret        String?   // 2FA/TOTP
+  totpEnabled       Boolean   @default(false)
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
   // Relations
-  patients          Patient[]
-  providers         Provider[]
-  payments          Payment[]
-  cryptoPayments    CryptoPayment[]
-  refunds           Refund[]
-  auditLogs         AuditLog[]
-  wallets           Wallet[]
+  facility          Facility? @relation(fields: [facilityId], references: [id])
+  facilityId        String?
   sessions          Session[]
-  transactions      Transaction[]
-  bookings          Booking[]
-  alerts            Alert[]
+  auditLogs         AuditLog[]
   notifications     Notification[]
-  aiCommandLogs     AiCommandLog[]
-  cryptoWithdrawals CryptoWithdrawal[]
-  vectorMemory      VectorMemory[]
-  kycVerifications  KycVerification[]
-
+  oauthProviders    OAuthProvider[]
+  
+  @@index([email])
+  @@index([facilityId])
   @@map("users")
 }
 
 enum UserRole {
+  SUPER_ADMIN
+  FACILITY_ADMIN
+  FACILITY_STAFF
+  BILLING_MANAGER
   PATIENT
-  PROVIDER
-  ADMIN
+  SUPPORT_AGENT
 }
 
-model KycVerification {
-  id          String    @id @default(uuid())
-  userId      String    @map("user_id")
-  sessionId   String    @unique @map("session_id")
-  provider    String
-  status      String    @default("pending") // pending, approved, rejected, cancelled
-  completedAt DateTime? @map("completed_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+  PENDING_VERIFICATION
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+model Session {
+  id            String   @id @default(uuid())
+  userId        String
+  token         String   @unique
+  refreshToken  String?  @unique
+  expiresAt     DateTime
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
   @@index([userId])
-  @@map("kyc_verifications")
+  @@index([token])
+  @@map("sessions")
 }
 
-// Healthcare Facilities
+model OAuthProvider {
+  id            String   @id @default(uuid())
+  userId        String
+  provider      String   // 'google', 'microsoft', etc.
+  providerId    String   // Provider's user ID
+  accessToken   String   @db.Text
+  refreshToken  String?  @db.Text
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("oauth_providers")
+}
+
+// --- Healthcare Facilities ---
 model Facility {
-  id        String       @id @default(uuid())
-  name      String
-  address   String
-  city      String
-  state     String
-  zipCode   String       @map("zip_code")
-  phone     String
-  email     String
-  type      FacilityType
-  isActive  Boolean      @default(true) @map("is_active")
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
-
+  id                    String            @id @default(uuid())
+  name                  String
+  legalName             String
+  facilityType          FacilityType
+  npi                   String?           @unique // National Provider Identifier
+  taxId                 String?
+  licenseNumber         String?
+  
+  // Contact Info
+  email                 String
+  phoneNumber           String
+  website               String?
+  
+  // Address
+  addressLine1          String
+  addressLine2          String?
+  city                  String
+  state                 String
+  zipCode               String
+  country               String            @default("US")
+  
+  // Business Details
+  status                FacilityStatus    @default(ACTIVE)
+  subscriptionTier      SubscriptionTier  @default(STARTER)
+  onboardedAt           DateTime?
+  contractStartDate     DateTime?
+  contractEndDate       DateTime?
+  
+  // Compliance
+  hipaaCompliant        Boolean           @default(false)
+  pciCompliant          Boolean           @default(false)
+  lastComplianceCheck   DateTime?
+  
+  // Billing
+  stripeCustomerId      String?           @unique
+  stripeSubscriptionId  String?
+  
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  
   // Relations
-  patients       Patient[]
-  payments       Payment[]
-  cryptoPayments CryptoPayment[]
-  providers      Provider[]
-  chambers       Chamber[]
-  bookings       Booking[]
-
+  users                 User[]
+  patients              Patient[]
+  transactions          Transaction[]
+  invoices              Invoice[]
+  paymentMethods        PaymentMethod[]
+  ehrIntegration        EHRIntegration?
+  analytics             FacilityAnalytics[]
+  
+  @@index([status])
+  @@index([subscriptionTier])
   @@map("facilities")
 }
 
 enum FacilityType {
   HOSPITAL
   CLINIC
-  LABORATORY
-  IMAGING_CENTER
+  URGENT_CARE
+  SPECIALTY_CLINIC
+  DENTAL
+  PHYSICAL_THERAPY
+  MENTAL_HEALTH
+  DIAGNOSTIC_CENTER
+  PHARMACY
+  OTHER
 }
 
-// Patient Management
+enum FacilityStatus {
+  ACTIVE
+  ONBOARDING
+  SUSPENDED
+  TERMINATED
+  TRIAL
+}
+
+enum SubscriptionTier {
+  TRIAL
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  CUSTOM
+}
+
+// --- Patient Management ---
 model Patient {
-  id          String   @id @default(uuid())
-  userId      String   @unique @map("user_id")
-  firstName   String   @map("first_name")
-  lastName    String   @map("last_name")
-  dateOfBirth DateTime @map("date_of_birth") @db.Date
-  phone       String?
-  address     String?
-  city        String?
-  state       String?
-  zipCode     String?  @map("zip_code")
-  email       String?
-  ssn         String?  @map("ssn") // Encrypted
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
+  id                String        @id @default(uuid())
+  facilityId        String
+  
+  // Personal Info
+  firstName         String
+  lastName          String
+  middleName        String?
+  dateOfBirth       DateTime
+  gender            Gender
+  email             String?
+  phoneNumber       String?
+  
+  // Medical Record
+  mrn               String        // Medical Record Number (facility-specific)
+  ssn               String?       @db.Text // Encrypted
+  
+  // Address
+  addressLine1      String?
+  addressLine2      String?
+  city              String?
+  state             String?
+  zipCode           String?
+  
+  // Emergency Contact
+  emergencyContactName   String?
+  emergencyContactPhone  String?
+  emergencyContactRelation String?
+  
+  // Insurance
+  insuranceProvider      String?
+  insurancePolicyNumber  String?
+  insuranceGroupNumber   String?
+  
+  status            PatientStatus @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
   // Relations
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  facility       Facility        @relation(fields: [facilityId], references: [id])
-  facilityId     String          @map("facility_id")
-  payments       Payment[]
-  cryptoPayments CryptoPayment[]
-  medicalRecords MedicalRecord[]
-  bookings       Booking[]
-
+  facility          Facility      @relation(fields: [facilityId], references: [id])
+  transactions      Transaction[]
+  invoices          Invoice[]
+  paymentMethods    PaymentMethod[]
+  appointments      Appointment[]
+  
+  @@unique([facilityId, mrn])
+  @@index([facilityId])
+  @@index([email])
   @@map("patients")
 }
 
-// Provider Management
-model Provider {
-  id         String   @id @default(uuid())
-  userId     String   @unique @map("user_id")
-  npiNumber  String   @unique @map("npi_number")
-  firstName  String   @map("first_name")
-  lastName   String   @map("last_name")
-  specialty  String
-  phone      String
-  email      String
-  facilityId String   @map("facility_id")
-  isActive   Boolean  @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
+  OTHER
+}
 
+enum PatientStatus {
+  ACTIVE
+  INACTIVE
+  DECEASED
+}
+
+// --- Appointments ---
+model Appointment {
+  id                String              @id @default(uuid())
+  patientId         String
+  facilityId        String
+  providerId        String?
+  
+  appointmentDate   DateTime
+  duration          Int                 // minutes
+  appointmentType   String
+  status            AppointmentStatus   @default(SCHEDULED)
+  
+  // Cost
+  estimatedCost     Decimal?            @db.Decimal(10, 2)
+  actualCost        Decimal?            @db.Decimal(10, 2)
+  
+  notes             String?             @db.Text
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  patient           Patient             @relation(fields: [patientId], references: [id])
+  
+  @@index([patientId])
+  @@index([facilityId])
+  @@index([appointmentDate])
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// --- Transactions & Payments ---
+model Transaction {
+  id                    String              @id @default(uuid())
+  facilityId            String
+  patientId             String?
+  invoiceId             String?
+  
+  // Transaction Details
+  type                  TransactionType
+  status                TransactionStatus
+  amount                Decimal             @db.Decimal(10, 2)
+  currency              String              @default("USD")
+  
+  // Payment Method
+  paymentMethodType     PaymentMethodType
+  paymentMethodId       String?
+  
+  // Stripe (Traditional)
+  stripePaymentIntentId String?             @unique
+  stripeChargeId        String?
+  
+  // Crypto
+  blockchainNetwork     BlockchainNetwork?
+  walletAddress         String?
+  transactionHash       String?             @unique
+  cryptoAmount          Decimal?            @db.Decimal(20, 8)
+  cryptoCurrency        String?
+  
+  // Fees & Settlement
+  processingFee         Decimal?            @db.Decimal(10, 2)
+  platformFee           Decimal?            @db.Decimal(10, 2)
+  netAmount             Decimal?            @db.Decimal(10, 2)
+  
+  // Metadata
+  description           String?
+  metadata              Json?
+  
+  // Fraud Detection
+  fraudScore            Float?
+  fraudStatus           FraudStatus         @default(PENDING)
+  fraudCheckedAt        DateTime?
+  
+  // Timeline
+  processedAt           DateTime?
+  settledAt             DateTime?
+  refundedAt            DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
   // Relations
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  facility       Facility        @relation(fields: [facilityId], references: [id])
-  payments       Payment[]
-  medicalRecords MedicalRecord[]
-  bookings       Booking[]
-
-  @@map("providers")
+  facility              Facility            @relation(fields: [facilityId], references: [id])
+  patient               Patient?            @relation(fields: [patientId], references: [id])
+  invoice               Invoice?            @relation(fields: [invoiceId], references: [id])
+  refunds               Refund[]
+  
+  @@index([facilityId])
+  @@index([patientId])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("transactions")
 }
 
-// Payment Processing
-model Payment {
-  id            String        @id @default(uuid())
-  amount        Decimal       @db.Decimal(10, 2)
-  currency      String        @default("USD")
-  paymentMethod PaymentMethod @map("payment_method")
-  status        PaymentStatus @default(PENDING)
-  description   String
-  transactionId String?       @map("transaction_id")
-  patientId     String        @map("patient_id")
-  facilityId    String        @map("facility_id")
-  providerId    String?       @map("provider_id")
-  createdBy     String        @map("created_by")
-  // Debit card specific fields
-  isDebitCard   Boolean       @default(false) @map("is_debit_card")
-  pinVerified   Boolean       @default(false) @map("pin_verified")
-  balanceCheck  DateTime?     @map("balance_check")
-  hsaFsaType    String?       @map("hsa_fsa_type") // HSA, FSA, null
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-
-  // Relations
-  patient  Patient   @relation(fields: [patientId], references: [id])
-  facility Facility  @relation(fields: [facilityId], references: [id])
-  user     User      @relation(fields: [createdBy], references: [id])
-  provider Provider? @relation(fields: [providerId], references: [id])
-  refunds  Refund[]
-
-  @@map("payments")
+enum TransactionType {
+  PAYMENT
+  REFUND
+  PAYOUT
+  ADJUSTMENT
+  FEE
 }
 
-enum PaymentMethod {
-  CREDIT_CARD
-  DEBIT_CARD
-  CRYPTO
-  ACH
-  HSA_CARD // Health Savings Account
-  FSA_CARD // Flexible Spending Account
-}
-
-enum PaymentStatus {
+enum TransactionStatus {
   PENDING
   PROCESSING
   COMPLETED
   FAILED
-  REFUNDED
   CANCELLED
-}
-
-// Cryptocurrency Payments
-model CryptoPayment {
-  id              String              @id @default(uuid())
-  amount          Decimal             @db.Decimal(10, 2)
-  cryptocurrency  Cryptocurrency
-  walletAddress   String              @map("wallet_address")
-  paymentAddress  String?             @map("payment_address")
-  status          CryptoPaymentStatus @default(PENDING)
-  transactionHash String?             @map("transaction_hash")
-  confirmations   Int                 @default(0)
-  patientId       String              @map("patient_id")
-  facilityId      String              @map("facility_id")
-  createdBy       String              @map("created_by")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-
-  // Relations
-  patient  Patient  @relation(fields: [patientId], references: [id])
-  facility Facility @relation(fields: [facilityId], references: [id])
-  user     User     @relation(fields: [createdBy], references: [id])
-
-  @@map("crypto_payments")
-}
-
-enum Cryptocurrency {
-  SOL
-  ETH
-  MATIC
-  USDC
-  USDT
-}
-
-enum CryptoPaymentStatus {
-  PENDING
-  CONFIRMING
-  COMPLETED
-  FAILED
   REFUNDED
+  PARTIALLY_REFUNDED
 }
 
-// Refund Management
+enum PaymentMethodType {
+  CREDIT_CARD
+  DEBIT_CARD
+  ACH
+  CRYPTO
+  CASH
+  CHECK
+  INSURANCE
+}
+
+enum BlockchainNetwork {
+  SOLANA
+  ETHEREUM
+  POLYGON
+  BASE
+  BINANCE_SMART_CHAIN
+}
+
+enum FraudStatus {
+  PENDING
+  APPROVED
+  FLAGGED
+  BLOCKED
+  REVIEW_REQUIRED
+}
+
+model PaymentMethod {
+  id                String              @id @default(uuid())
+  facilityId        String?
+  patientId         String?
+  
+  type              PaymentMethodType
+  isDefault         Boolean             @default(false)
+  status            PaymentMethodStatus @default(ACTIVE)
+  
+  // Card Details (encrypted/tokenized)
+  cardLast4         String?
+  cardBrand         String?
+  cardExpMonth      Int?
+  cardExpYear       Int?
+  
+  // Bank Account
+  bankName          String?
+  bankAccountLast4  String?
+  bankAccountType   String?             // 'checking' or 'savings'
+  
+  // Crypto Wallet
+  walletAddress     String?
+  walletType        String?
+  blockchainNetwork BlockchainNetwork?
+  
+  // Stripe
+  stripePaymentMethodId String?         @unique
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  facility          Facility?           @relation(fields: [facilityId], references: [id])
+  patient           Patient?            @relation(fields: [patientId], references: [id])
+  
+  @@index([facilityId])
+  @@index([patientId])
+  @@map("payment_methods")
+}
+
+enum PaymentMethodStatus {
+  ACTIVE
+  EXPIRED
+  DISABLED
+  PENDING_VERIFICATION
+}
+
 model Refund {
-  id          String       @id @default(uuid())
-  paymentId   String       @map("payment_id")
-  amount      Decimal      @db.Decimal(10, 2)
-  reason      String
-  status      RefundStatus @default(PENDING)
-  processedBy String       @map("processed_by")
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-
-  // Relations
-  payment Payment @relation(fields: [paymentId], references: [id])
-  user    User    @relation(fields: [processedBy], references: [id])
-
+  id                String          @id @default(uuid())
+  transactionId     String
+  
+  amount            Decimal         @db.Decimal(10, 2)
+  currency          String          @default("USD")
+  reason            String?
+  status            RefundStatus    @default(PENDING)
+  
+  stripeRefundId    String?         @unique
+  
+  processedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  transaction       Transaction     @relation(fields: [transactionId], references: [id])
+  
+  @@index([transactionId])
   @@map("refunds")
 }
 
@@ -275,434 +455,248 @@ enum RefundStatus {
   PROCESSING
   COMPLETED
   FAILED
+  CANCELLED
 }
 
-// Medical Records
-model MedicalRecord {
-  id          String   @id @default(uuid())
-  patientId   String   @map("patient_id")
-  providerId  String   @map("provider_id")
-  recordType  String   @map("record_type")
-  diagnosis   String?
-  treatment   String?
-  notes       String?
-  dateOfVisit DateTime @map("date_of_visit") @db.Date
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  patient  Patient  @relation(fields: [patientId], references: [id])
-  provider Provider @relation(fields: [providerId], references: [id])
-
-  @@map("medical_records")
-}
-
-// Audit Logging
-model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?  @map("user_id")
-  action     String
-  resource   String
-  resourceId String?  @map("resource_id")
-  ipAddress  String?  @map("ip_address")
-  userAgent  String?  @map("user_agent")
-  details    Json?
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User? @relation(fields: [userId], references: [id])
-
-  @@map("audit_logs")
-}
-
-// System Configuration
-model SystemConfig {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  value     Json
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("system_config")
-}
-
-// API Keys for external services
-model ApiKey {
-  id          String    @id @default(uuid())
-  serviceName String    @map("service_name")
-  keyHash     String    @map("key_hash")
-  isActive    Boolean   @default(true) @map("is_active")
-  lastUsed    DateTime? @map("last_used")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  @@map("api_keys")
-}
-
-// Wallet Management
-model Wallet {
-  id         String    @id @default(cuid())
-  userId     String    @map("user_id")
-  address    String    @unique
-  blockchain String
-  walletType String?   @map("wallet_type")
-  isPrimary  Boolean   @default(false) @map("is_primary")
-  isActive   Boolean   @default(true) @map("is_active")
-  balanceUSD Float?    @map("balance_usd")
-  lastSyncAt DateTime? @map("last_sync_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-
-  @@index([userId, isActive])
-  @@index([address])
-  @@map("wallets")
-}
-
-// Session Management - NOTE: This table should have RLS policies enabled in production
-// Only accessible via service accounts, not public API
-// ============================================
-// SESSION MANAGEMENT - SECURITY CRITICAL
-// ============================================
-// ⚠️  SECURITY WARNING: This table contains sensitive authentication tokens
-// ⚠️  RLS (Row Level Security) MUST be enabled in production
-// ⚠️  Never expose refreshToken or token fields via public API
-// ⚠️  Use sessions_safe view for client-side queries
-// 
-// Security measures implemented:
-// 1. RLS policies restrict access to session owners only
-// 2. Safe view (sessions_safe) excludes sensitive token fields
-// 3. Audit logging tracks all session access
-// 4. Automatic cleanup of expired sessions
-// 5. Helper functions for safe session management
-//
-// To apply RLS: Run backend/scripts/add-session-rls.sql
-// ============================================
-
-model Session {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // SENSITIVE: Session token - protected by RLS
-  token String @unique
-
-  // SENSITIVE: Refresh token for minting new access tokens
-  // ⚠️  CRITICAL: Exposure allows account takeover
-  // ⚠️  Never return this field in API responses
-  // ⚠️  Store encrypted in production
-  refreshToken String? @unique
-
-  // Session metadata
-  ipAddress String?
-  userAgent String?
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([token])
-  @@index([expiresAt])
-  @@map("Session")
-}
-
-// Verification Tokens
-model VerificationToken {
-  id        String   @id @default(cuid())
-  email     String
-  token     String   @unique
-  type      String
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([email, type])
-  @@index([token])
-  @@map("verification_tokens")
-}
-
-// Transaction Management
-model Transaction {
-  id            String   @id @default(cuid())
-  userId        String   @map("user_id")
-  walletId      String?  @map("wallet_id")
-  amount        Decimal  @db.Decimal(18, 8)
-  currency      String
-  type          String
-  status        String
-  description   String?
-  paymentMethod String   @map("payment_method")
-  invoiceId     String?  @map("invoice_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  wallet  Wallet?  @relation(fields: [walletId], references: [id])
-  invoice Invoice? @relation(fields: [invoiceId], references: [id])
-
-  @@index([userId])
-  @@index([walletId])
-  @@index([status])
-  @@map("transactions")
-}
-
-// Invoice Management
+// --- Invoicing & Billing ---
 model Invoice {
-  id            String   @id @default(cuid())
-  invoiceNumber String   @unique @map("invoice_number")
-  amount        Decimal  @db.Decimal(10, 2)
-  status        String
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
+  id                String          @id @default(uuid())
+  invoiceNumber     String          @unique
+  facilityId        String
+  patientId         String
+  
+  // Amounts
+  subtotal          Decimal         @db.Decimal(10, 2)
+  taxAmount         Decimal?        @db.Decimal(10, 2)
+  discountAmount    Decimal?        @db.Decimal(10, 2)
+  totalAmount       Decimal         @db.Decimal(10, 2)
+  paidAmount        Decimal         @default(0) @db.Decimal(10, 2)
+  balanceDue        Decimal         @db.Decimal(10, 2)
+  
+  // Status & Dates
+  status            InvoiceStatus   @default(DRAFT)
+  dueDate           DateTime?
+  issuedDate        DateTime?
+  paidDate          DateTime?
+  
+  // Metadata
+  notes             String?         @db.Text
+  metadata          Json?
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
   // Relations
-  transactions Transaction[]
-
+  facility          Facility        @relation(fields: [facilityId], references: [id])
+  patient           Patient         @relation(fields: [patientId], references: [id])
+  lineItems         InvoiceLineItem[]
+  transactions      Transaction[]
+  
+  @@index([facilityId])
+  @@index([patientId])
+  @@index([status])
+  @@index([dueDate])
   @@map("invoices")
 }
 
-// Chamber Management
-model Chamber {
-  id         String   @id @default(uuid())
-  name       String
-  floor      Int
-  type       String
-  status     String   @default("available")
-  capacity   Int      @default(1)
-  equipment  Json
-  facilityId String   @map("facility_id")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  facility           Facility             @relation(fields: [facilityId], references: [id])
-  bookings           Booking[]
-  schedules          ChamberSchedule[]
-  maintenanceRecords ChamberMaintenance[]
-
-  @@index([facilityId])
-  @@index([status])
-  @@map("chambers")
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
 }
 
-// Booking Management
-model Booking {
+model InvoiceLineItem {
+  id              String    @id @default(uuid())
+  invoiceId       String
+  
+  description     String
+  quantity        Int       @default(1)
+  unitPrice       Decimal   @db.Decimal(10, 2)
+  totalPrice      Decimal   @db.Decimal(10, 2)
+  
+  // Medical Coding
+  cptCode         String?   // Current Procedural Terminology
+  icdCode         String?   // International Classification of Diseases
+  
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  
+  invoice         Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  @@index([invoiceId])
+  @@map("invoice_line_items")
+}
+
+// --- EHR Integration ---
+model EHRIntegration {
+  id                String          @id @default(uuid())
+  facilityId        String          @unique
+  
+  ehrSystem         EHRSystem
+  apiEndpoint       String
+  apiKey            String          @db.Text // Encrypted
+  isActive          Boolean         @default(true)
+  
+  // Sync Settings
+  lastSyncAt        DateTime?
+  syncFrequency     Int?            // minutes
+  autoSync          Boolean         @default(false)
+  
+  // Mapping Config
+  fieldMappings     Json?
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  facility          Facility        @relation(fields: [facilityId], references: [id])
+  syncLogs          EHRSyncLog[]
+  
+  @@map("ehr_integrations")
+}
+
+enum EHRSystem {
+  EPIC
+  CERNER
+  ALLSCRIPTS
+  ATHENAHEALTH
+  ECLINICALWORKS
+  MEDITECH
+  NEXTGEN
+  CUSTOM
+}
+
+model EHRSyncLog {
+  id                String          @id @default(uuid())
+  ehrIntegrationId  String
+  
+  syncType          String          // 'patients', 'appointments', 'billing'
+  status            String          // 'success', 'failed', 'partial'
+  recordsProcessed  Int             @default(0)
+  recordsFailed     Int             @default(0)
+  errorMessage      String?         @db.Text
+  
+  startedAt         DateTime
+  completedAt       DateTime?
+  
+  ehrIntegration    EHRIntegration  @relation(fields: [ehrIntegrationId], references: [id])
+  
+  @@index([ehrIntegrationId])
+  @@index([startedAt])
+  @@map("ehr_sync_logs")
+}
+
+// --- Analytics & Reporting ---
+model FacilityAnalytics {
+  id                    String    @id @default(uuid())
+  facilityId            String
+  date                  DateTime  // Daily aggregation
+  
+  // Revenue Metrics
+  totalRevenue          Decimal   @db.Decimal(10, 2)
+  cryptoRevenue         Decimal   @db.Decimal(10, 2)
+  traditionalRevenue    Decimal   @db.Decimal(10, 2)
+  
+  // Transaction Metrics
+  totalTransactions     Int
+  successfulTransactions Int
+  failedTransactions    Int
+  refundedTransactions  Int
+  
+  // Patient Metrics
+  totalPatients         Int
+  newPatients           Int
+  activePatients        Int
+  
+  // Appointment Metrics
+  totalAppointments     Int
+  completedAppointments Int
+  cancelledAppointments Int
+  noShows               Int
+  
+  // Financial Metrics
+  averageTransactionValue Decimal @db.Decimal(10, 2)
+  processingFees        Decimal   @db.Decimal(10, 2)
+  netRevenue            Decimal   @db.Decimal(10, 2)
+  
+  createdAt             DateTime  @default(now())
+  
+  facility              Facility  @relation(fields: [facilityId], references: [id])
+  
+  @@unique([facilityId, date])
+  @@index([facilityId])
+  @@index([date])
+  @@map("facility_analytics")
+}
+
+// --- Audit & Compliance ---
+model AuditLog {
   id            String    @id @default(uuid())
-  patientId     String    @map("patient_id")
-  doctorId      String    @map("doctor_id")
-  chamberId     String    @map("chamber_id")
-  facilityId    String    @map("facility_id")
-  bookingDate   DateTime  @map("booking_date") @db.Date
-  startTime     DateTime  @map("start_time")
-  endTime       DateTime  @map("end_time")
-  duration      Int
-  serviceType   String    @map("service_type")
-  status        String    @default("pending")
-  notes         String?
-  invoiceId     String?   @map("invoice_id")
-  paymentStatus String    @default("pending") @map("payment_status")
-  createdBy     String    @map("created_by")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  cancelledAt   DateTime? @map("cancelled_at")
-
-  // Relations
-  patient  Patient  @relation(fields: [patientId], references: [id])
-  doctor   Provider @relation(fields: [doctorId], references: [id])
-  chamber  Chamber  @relation(fields: [chamberId], references: [id])
-  facility Facility @relation(fields: [facilityId], references: [id])
-  creator  User     @relation(fields: [createdBy], references: [id])
-
-  @@index([patientId])
-  @@index([doctorId])
-  @@index([chamberId])
-  @@index([facilityId])
-  @@index([bookingDate])
-  @@index([status])
-  @@map("bookings")
-}
-
-// Chamber Schedule
-model ChamberSchedule {
-  id        String   @id @default(uuid())
-  chamberId String   @map("chamber_id")
-  bookingId String?  @map("booking_id")
-  status    String
-  startTime DateTime @map("start_time")
-  endTime   DateTime @map("end_time")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  chamber Chamber @relation(fields: [chamberId], references: [id])
-
-  @@index([chamberId])
-  @@index([startTime, endTime])
-  @@map("chamber_schedules")
-}
-
-// Chamber Maintenance
-model ChamberMaintenance {
-  id          String    @id @default(uuid())
-  chamberId   String    @map("chamber_id")
-  type        String
-  status      String
-  scheduledAt DateTime  @map("scheduled_at")
-  completedAt DateTime? @map("completed_at")
-  notes       String?
-  assignedTo  String?   @map("assigned_to")
-  createdAt   DateTime  @default(now()) @map("created_at")
-
-  // Relations
-  chamber Chamber @relation(fields: [chamberId], references: [id])
-
-  @@index([chamberId])
-  @@index([status])
-  @@map("chamber_maintenance")
-}
-
-// Alert System
-model Alert {
-  id            String        @id @default(uuid())
-  userId        String        @map("user_id")
-  type          AlertType
-  severity      AlertSeverity
-  title         String
-  message       String
-  transactionId String?       @map("transaction_id")
-  amount        Decimal?      @map("amount")
-  currency      String?
-  paymentMethod String?       @map("payment_method")
-  riskScore     Float?        @map("risk_score")
-  isRead        Boolean       @default(false) @map("is_read")
+  userId        String?
+  
+  action        String    // 'CREATE', 'UPDATE', 'DELETE', 'LOGIN', etc.
+  entityType    String    // 'Patient', 'Transaction', etc.
+  entityId      String?
+  
+  // HIPAA Tracking
+  ipAddress     String?
+  userAgent     String?
   metadata      Json?
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id])
-
+  
+  timestamp     DateTime  @default(now())
+  
+  user          User?     @relation(fields: [userId], references: [id])
+  
   @@index([userId])
-  @@index([type])
-  @@index([severity])
-  @@index([createdAt])
-  @@map("alerts")
+  @@index([entityType, entityId])
+  @@index([timestamp])
+  @@map("audit_logs")
 }
 
-model MonitoringRule {
-  id          String        @id @default(uuid())
-  name        String
-  description String
-  enabled     Boolean       @default(true)
-  conditions  Json
-  actions     Json
-  alertType   AlertType     @map("alert_type")
-  severity    AlertSeverity
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-
-  @@index([enabled])
-  @@index([alertType])
-  @@map("monitoring_rules")
-}
-
-enum AlertType {
-  FRAUD_DETECTED
-  LARGE_TRANSACTION
-  SUSPICIOUS_ACTIVITY
-  PAYMENT_FAILED
-  LIMIT_EXCEEDED
-}
-
-enum AlertSeverity {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-// Notification System
 model Notification {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  type      String
-  message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([read])
+  id            String              @id @default(uuid())
+  userId        String
+  
+  type          NotificationType
+  title         String
+  message       String              @db.Text
+  priority      NotificationPriority @default(NORMAL)
+  
+  isRead        Boolean             @default(false)
+  readAt        DateTime?
+  
+  // Action
+  actionUrl     String?
+  metadata      Json?
+  
+  createdAt     DateTime            @default(now())
+  
+  user          User                @relation(fields: [userId], references: [id])
+  
+  @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
 }
 
-// AI Command Logs
-model AiCommandLog {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  model     String
-  input     Json
-  output    Json?
-  status    AiStatus @default(PENDING)
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("ai_command_logs")
+enum NotificationType {
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  REFUND_PROCESSED
+  INVOICE_CREATED
+  INVOICE_OVERDUE
+  APPOINTMENT_REMINDER
+  COMPLIANCE_ALERT
+  SYSTEM_ALERT
+  SECURITY_ALERT
 }
 
-enum AiStatus {
-  PENDING
-  COMPLETED
-  ERROR
-}
-
-// Crypto Withdrawals
-model CryptoWithdrawal {
-  id        String           @id @default(uuid())
-  userId    String           @map("user_id")
-  amount    Decimal          @db.Decimal(18, 8)
-  currency  String
-  status    WithdrawalStatus @default(PENDING)
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("crypto_withdrawals")
-}
-
-enum WithdrawalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  COMPLETED
-}
-
-// Vector Memory for AI
-model VectorMemory {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  embedding Json
-  context   String?  @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([createdAt])
-  @@map("vector_memory")
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }

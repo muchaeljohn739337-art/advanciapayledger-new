@@ -25,7 +25,7 @@ import appointmentRoutes from "./routes/appointments";
 import medicalRecordRoutes from "./routes/medical-records";
 import prescriptionRoutes from "./routes/prescriptions";
 import notificationRoutes from "./routes/notifications";
-import walletRoutes from "./routes/wallets";
+import { walletRoutes } from "./routes/wallets";
 // import walletRoutes from "./routes/wallet.secure"; // File not found
 import chamberRoutes from "./routes/chambers";
 import bookingRoutes from "./routes/bookings";
@@ -36,6 +36,7 @@ import monitoringRoutes from "./routes/monitoring";
 import { adminRoutes } from "./routes/admin";
 import { adminUserRoutes } from "./routes/admin/users";
 import { adminWalletRoutes } from "./routes/admin/wallet";
+import { virtualCardRoutes } from "./routes/virtualCards";
 import { rateLimiter } from "./middleware/rateLimiter";
 import { setupSwagger } from "./config/swagger";
 import { requestId, requestLogger } from "./middleware/requestLogger";
@@ -131,6 +132,7 @@ app.use("/api/monitoring", monitoringRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/admin/wallet", adminWalletRoutes);
+app.use("/api/virtual-cards", virtualCardRoutes);
 
 // Error handling
 app.use(notFoundHandler);

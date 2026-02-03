@@ -1,6 +1,7 @@
 // Email templates for Advancia Pay Ledger
 import * as fs from "fs";
 import * as path from "path";
+import { logger } from "../utils/logger";
 
 export interface EmailTemplate {
   subject: string;
@@ -110,7 +111,7 @@ export class EmailTemplates {
       );
       return fs.readFileSync(templatePath, "utf-8");
     } catch (error) {
-      console.error(`Failed to load template ${templateName}:`, error);
+      logger.error("Failed to load email template", { templateName, error });
       return "";
     }
   };

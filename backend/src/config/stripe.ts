@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { logger } from "../utils/logger";
 
 let stripeClient: Stripe | null = null;
 
@@ -17,7 +18,7 @@ export const getStripeClient = (): Stripe => {
       timeout: 30000,
     });
 
-    console.log('Stripe client initialized');
+    logger.info("Stripe client initialized");
   }
 
   return stripeClient;

@@ -102,6 +102,13 @@ function AdminConsolePage() {
               active={activeTab === "ecosystem"}
               onClick={() => setActiveTab("ecosystem")}
             />
+            <Link
+              href="/admin/super"
+              className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition bg-white/5 text-white/70 hover:bg-white/10 hover:text-white`}
+            >
+              <span className="text-xl">👑</span>
+              <span>Super Admin</span>
+            </Link>
           </div>
         </div>
       </div>
@@ -228,7 +235,7 @@ import TransferForm from "@/components/TransferForm";
 import Modal from "@/components/Modal";
 
 function UsersView() {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,7 +244,7 @@ function UsersView() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem("token"); // Or however you store your auth token
+        const token = localStorage.getItem("token");
         if (!token) throw new Error("No auth token found");
         const response = await adminApi.getAllUsers(token);
         setUsers(response.data);
@@ -251,6 +258,21 @@ function UsersView() {
     fetchUsers();
   }, []);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+        return "bg-green-500/20 text-green-300";
+      case "SUSPENDED":
+        return "bg-red-500/20 text-red-300";
+      case "INACTIVE":
+        return "bg-gray-500/20 text-gray-300";
+      case "PENDING_VERIFICATION":
+        return "bg-yellow-500/20 text-yellow-300";
+      default:
+        return "bg-gray-500/20 text-gray-300";
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
 
@@ -259,10 +281,28 @@ function UsersView() {
       {/* User Stats */}
       <div className="grid grid-cols-5 gap-4">
         <StatBadge label="Total Users" value={users.length} color="blue" />
-        <StatBadge label="Active Now" value="N/A" color="green" />
-        <StatBadge label="Suspended" value="N/A" color="red" />
-        <StatBadge label="Pending" value="N/A" color="yellow" />
-        <StatBadge label="New Today" value="N/A" color="purple" />
+        <StatBadge
+          label="Active"
+          value={users.filter((u) => u.status === "ACTIVE").length}
+          color="green"
+        />
+        <StatBadge
+          label="Suspended"
+          value={users.filter((u) => u.status === "SUSPENDED").length}
+          color="red"
+        />
+        <StatBadge
+          label="Pending"
+          value={
+            users.filter((u) => u.status === "PENDING_VERIFICATION").length
+          }
+          color="yellow"
+        />
+        <StatBadge
+          label="Inactive"
+          value={users.filter((u) => u.status === "INACTIVE").length}
+          color="purple"
+        />
       </div>
 
       {/* Filters & Search */}
@@ -282,9 +322,12 @@ function UsersView() {
               className="px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All Roles</option>
-              <option value="ADMIN">Admin</option>
+              <option value="SUPER_ADMIN">Super Admin</option>
+              <option value="FACILITY_ADMIN">Facility Admin</option>
+              <option value="FACILITY_STAFF">Facility Staff</option>
+              <option value="BILLING_MANAGER">Billing Manager</option>
               <option value="PATIENT">Patient</option>
-              <option value="PROVIDER">Provider</option>
+              <option value="SUPPORT_AGENT">Support Agent</option>
             </select>
           </div>
           <button className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition">
@@ -325,24 +368,16 @@ function UsersView() {
                 </td>
                 <td className="px-6 py-4">
                   <span
-                    className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                      user.role === "ADMIN"
-                        ? "bg-blue-500/20 text-blue-300"
-                        : "bg-gray-500/20 text-gray-300"
-                    }`}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold bg-blue-500/20 text-blue-300`}
                   >
                     {user.role}
                   </span>
                 </td>
                 <td className="px-6 py-4">
                   <span
-                    className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                      user.isActive
-                        ? "bg-green-500/20 text-green-300"
-                        : "bg-red-500/20 text-red-300"
-                    }`}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold ${getStatusColor(user.status)}`}
                   >
-                    {user.isActive ? "Active" : "Inactive"}
+                    {user.status}
                   </span>
                 </td>
                 <td className="px-6 py-4">

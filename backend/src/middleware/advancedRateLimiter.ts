@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Redis from 'ioredis';
+import { logger } from "../utils/logger";
 
 interface RateLimitConfig {
   windowMs: number;
@@ -36,9 +37,9 @@ export class AdvancedRateLimiter {
         const key = this.getKey(req);
         const info = await this.checkLimit(key);
 
-        res.setHeader('X-RateLimit-Limit', info.limit);
-        res.setHeader('X-RateLimit-Remaining', info.remaining);
-        res.setHeader('X-RateLimit-Reset', info.resetTime);
+        res.setHeader("X-RateLimit-Limit", info.limit);
+        res.setHeader("X-RateLimit-Remaining", info.remaining);
+        res.setHeader("X-RateLimit-Reset", info.resetTime);
 
         if (info.remaining < 0) {
           if (this.config.handler) {
@@ -46,7 +47,7 @@ export class AdvancedRateLimiter {
           }
 
           return res.status(429).json({
-            error: 'Too many requests',
+            error: "Too many requests",
             retryAfter: Math.ceil((info.resetTime - Date.now()) / 1000),
           });
         }
@@ -61,7 +62,10 @@ export class AdvancedRateLimiter {
 
         next();
       } catch (error) {
-        console.error('Rate limiter error:', error);
+        logger.error("Rate limiter error", {
+          error,
+          requestId: (req as any).requestId,
+        });
         next();
       }
     };
@@ -72,15 +76,15 @@ export class AdvancedRateLimiter {
     const windowStart = now - this.config.windowMs;
 
     const multi = this.redis.multi();
-    
+
     multi.zremrangebyscore(key, 0, windowStart);
     multi.zadd(key, now, `${now}-${Math.random()}`);
     multi.zcard(key);
     multi.expire(key, Math.ceil(this.config.windowMs / 1000));
 
     const results = await multi.exec();
-    
-    const current = results?.[2]?.[1] as number || 0;
+
+    const current = (results?.[2]?.[1] as number) || 0;
     const remaining = Math.max(0, this.config.maxRequests - current);
     const resetTime = now + this.config.windowMs;
 
@@ -99,7 +103,7 @@ export class AdvancedRateLimiter {
 
     const userId = (req as any).user?.id;
     const ip = req.ip || req.socket.remoteAddress;
-    
+
     return `ratelimit:${userId || ip}`;
   }
 
