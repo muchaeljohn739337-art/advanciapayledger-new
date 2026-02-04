@@ -1,0 +1,91 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: advancia-services
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: advancia-services
+    app.kubernetes.io/part-of: advancia-platform
+spec:
+  generators:
+    - list:
+        elements:
+          - name: api-gateway
+            path: k8s/overlays/prod/platform-core/api-gateway
+            namespace: platform-core
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/api-gateway"
+          - name: auth-service
+            path: k8s/overlays/prod/platform-core/auth-service
+            namespace: platform-core
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/auth-service"
+          - name: tenant-service
+            path: k8s/overlays/prod/platform-core/tenant-service
+            namespace: platform-core
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/tenant-service"
+          - name: billing-service
+            path: k8s/overlays/prod/services/billing-service
+            namespace: services
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/billing-service"
+          - name: metering-service
+            path: k8s/overlays/prod/services/metering-service
+            namespace: services
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/metering-service"
+          - name: web3-event-service
+            path: k8s/overlays/prod/services/web3-event-service
+            namespace: services
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/web3-event-service"
+          - name: ai-orchestrator
+            path: k8s/overlays/prod/services/ai-orchestrator
+            namespace: services
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/ai-orchestrator"
+          - name: monitoring-service
+            path: k8s/overlays/prod/services/monitoring-service
+            namespace: services
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/monitoring-service"
+          - name: notification-service
+            path: k8s/overlays/prod/services/notification-service
+            namespace: services
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/notification-service"
+          - name: security-service
+            path: k8s/overlays/prod/services/security-service
+            namespace: services
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/security-service"
+          - name: audit-log-service
+            path: k8s/overlays/prod/services/audit-log-service
+            namespace: services
+            ecr_repo: "032474760584.dkr.ecr.us-east-1.amazonaws.com/audit-log-service"
+  template:
+    metadata:
+      name: "{{name}}"
+      labels:
+        app.kubernetes.io/name: "{{name}}"
+        app.kubernetes.io/part-of: advancia-services
+      annotations:
+        argocd-image-updater.argoproj.io/image-list: "{{name}}={{ecr_repo}}"
+        argocd-image-updater.argoproj.io/'{{name}}'.update-strategy: semver
+        argocd-image-updater.argoproj.io/'{{name}}'.allow-tags: regexp:^v[0-9]+\.[0-9]+\.[0-9]+$
+        argocd-image-updater.argoproj.io/'{{name}}'.write-back-method: git
+        argocd-image-updater.argoproj.io/write-back-target: kustomization
+    spec:
+      project: default
+      source:
+        repoURL: "git@github.com:your-org/infra.git"
+        targetRevision: HEAD
+        path: "{{path}}"
+      destination:
+        server: "https://kubernetes.default.svc"
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m

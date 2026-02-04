@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-service
+  namespace: platform-core
+  labels:
+    app: security-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: security-service
+  template:
+    metadata:
+      labels:
+        app: security-service
+    spec:
+      serviceAccountName: security-service-sa
+      containers:
+        - name: security-service
+          image: ghcr.io/advancia/security-service:REPLACE_TAG
+          ports:
+            - containerPort: 4009
+              name: http
+          envFrom:
+            - secretRef:
+                name: security-service-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"

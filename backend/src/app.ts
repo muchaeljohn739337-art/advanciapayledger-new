@@ -40,6 +40,10 @@ import { virtualCardRoutes } from "./routes/virtualCards";
 import { rateLimiter } from "./middleware/rateLimiter";
 import { setupSwagger } from "./config/swagger";
 import { requestId, requestLogger } from "./middleware/requestLogger";
+import devRoutes from "./routes/dev";
+import complianceRoutes from "./compliance/ComplianceRoutes";
+import performanceRoutes from "./performance/PerformanceRoutes";
+import testingRoutes from "./testing/TestingRoutes";
 import {
   preventSensitiveTableAccess,
   sanitizeQueries,
@@ -133,6 +137,14 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/admin/wallet", adminWalletRoutes);
 app.use("/api/virtual-cards", virtualCardRoutes);
+
+// Developer Dashboard Routes
+app.use("/api/dev", devRoutes);
+
+// Advanced System Routes
+app.use("/api/compliance", complianceRoutes);
+app.use("/api/performance", performanceRoutes);
+app.use("/api/testing", testingRoutes);
 
 // Error handling
 app.use(notFoundHandler);

@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: metering-service-pdb
+  namespace: services
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: metering-service

@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - poddisruptionbudgets.yaml
+  - horizontalpodautoscalers.yaml
+  - billing-service
+  - monitoring-service
+  - ai-orchestrator
+  - notification-service
+  - security-service
+  - audit-log-service
+  - metering-service
+  - web3-event-service
+
+commonLabels:
+  app.kubernetes.io/part-of: advancia-platform
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/component: services
+  app.kubernetes.io/environment: production
+
+namespace: services

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-service
+  namespace: platform-core
+  labels:
+    app: monitoring-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: monitoring-service
+  template:
+    metadata:
+      labels:
+        app: monitoring-service
+    spec:
+      serviceAccountName: monitoring-service-sa
+      containers:
+        - name: monitoring-service
+          image: ghcr.io/advancia/monitoring-service:REPLACE_TAG
+          ports:
+            - containerPort: 4007
+              name: http
+          envFrom:
+            - secretRef:
+                name: monitoring-service-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"

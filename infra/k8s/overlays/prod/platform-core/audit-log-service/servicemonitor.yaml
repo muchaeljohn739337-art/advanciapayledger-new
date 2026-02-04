@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: audit-log-service-sm
+  namespace: platform-core
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: audit-log-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

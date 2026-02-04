@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: audit-log-service-policy
+  namespace: services
+spec:
+  podSelector:
+    matchLabels:
+      app: audit-log-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from: []
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              env: prod
+          podSelector:
+            matchLabels:
+              app: api-gateway
+      ports:
+        - protocol: TCP
+          port: 4010
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 5432

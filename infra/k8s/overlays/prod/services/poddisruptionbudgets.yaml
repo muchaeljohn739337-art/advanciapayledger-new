@@ -1,0 +1,88 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: billing-service-pdb
+  namespace: services
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: billing-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: monitoring-service-pdb
+  namespace: services
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: monitoring-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ai-orchestrator-pdb
+  namespace: services
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ai-orchestrator
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service-pdb
+  namespace: services
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: notification-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: security-service-pdb
+  namespace: services
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: security-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: audit-log-service-pdb
+  namespace: services
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: audit-log-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: metering-service-pdb
+  namespace: services
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: metering-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: web3-event-service-pdb
+  namespace: services
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: web3-event-service

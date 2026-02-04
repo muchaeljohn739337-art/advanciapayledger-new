@@ -1,0 +1,57 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+
+namespace: platform-core
+
+resources:
+  - api-gateway.yaml
+  - auth-service.yaml
+  - tenant-service.yaml
+  - billing-service.yaml
+  - monitoring-service.yaml
+  - ai-orchestrator.yaml
+  - network-policies.yaml
+
+patchesStrategicMerge:
+  - api-gateway.yaml
+  - auth-service.yaml
+  - tenant-service.yaml
+  - billing-service.yaml
+  - monitoring-service.yaml
+  - ai-orchestrator.yaml
+  - network-policies.yaml
+
+commonLabels:
+  app.kubernetes.io/environment: production
+  app.kubernetes.io/instance: advancia-prod
+
+images:
+  - name: ghcr.io/advancia/api-gateway
+    newTag: "1.0.0"
+  - name: ghcr.io/advancia/auth-service
+    newTag: "1.0.0"
+  - name: ghcr.io/advancia/tenant-service
+    newTag: "1.0.0"
+  - name: ghcr.io/advancia/billing-service
+    newTag: "1.0.0"
+  - name: ghcr.io/advancia/monitoring-service
+    newTag: "1.0.0"
+  - name: ghcr.io/advancia/ai-orchestrator
+    newTag: "1.0.0"
+
+replicas:
+  - name: api-gateway
+    count: 3
+  - name: auth-service
+    count: 2
+  - name: tenant-service
+    count: 2
+  - name: billing-service
+    count: 2
+  - name: monitoring-service
+    count: 2
+  - name: ai-orchestrator
+    count: 2

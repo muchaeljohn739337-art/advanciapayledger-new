@@ -1,0 +1,227 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: platform-core
+  labels:
+    app: api-gateway
+    version: v1
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: api-gateway
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+        version: v1
+        app.kubernetes.io/name: advancia
+        app.kubernetes.io/component: api-gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: api-gateway-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+        - name: api-gateway
+          image: ghcr.io/advancia/api-gateway:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+            - containerPort: 9090
+              name: metrics
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: METRICS_PORT
+              value: "9090"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-secrets
+                  key: JWT_SECRET
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service.platform-core.svc.cluster.local:4001"
+            - name: MONITORING_SERVICE_URL
+              value: "http://monitoring-service.services.svc.cluster.local:4002"
+            - name: WEB3_SERVICE_URL
+              value: "http://web3-service.services.svc.cluster.local:4003"
+            - name: AI_SERVICE_URL
+              value: "http://ai-orchestrator.services.svc.cluster.local:4004"
+            - name: SECURITY_SERVICE_URL
+              value: "http://security-service.services.svc.cluster.local:4005"
+            - name: BILLING_SERVICE_URL
+              value: "http://billing-service.services.svc.cluster.local:4006"
+            - name: NOTIFICATION_SERVICE_URL
+              value: "http://notification-service.services.svc.cluster.local:4007"
+            - name: TENANT_SERVICE_URL
+              value: "http://tenant-service.platform-core.svc.cluster.local:4008"
+            - name: FRONTEND_URL
+              value: "https://dashboard.advancia.com"
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: url
+            - name: RATE_LIMIT_WINDOW_MS
+              value: "900000"
+            - name: RATE_LIMIT_MAX_REQUESTS
+              value: "1000"
+            - name: CORS_ORIGIN
+              value: "https://dashboard.advancia.com,https://app.advancia.com"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: TRACING_ENABLED
+              value: "true"
+            - name: AWS_XRAY_DAEMON_ADDRESS
+              value: "xray-daemon.default.svc.cluster.local:2000"
+            - name: ENABLE_REQUEST_VALIDATION
+              value: "true"
+            - name: MAX_REQUEST_SIZE_MB
+              value: "10"
+            - name: TIMEOUT_MS
+              value: "30000"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      terminationGracePeriodSeconds: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: platform-core
+  labels:
+    app: api-gateway
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: api-gateway
+spec:
+  selector:
+    app: api-gateway
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: metrics
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: api-gateway
+  namespace: platform-core
+  labels:
+    app: api-gateway
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: api-gateway
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway
+  namespace: platform-core
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway
+  namespace: platform-core
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: api-gateway

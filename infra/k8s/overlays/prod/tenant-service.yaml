@@ -1,0 +1,187 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenant-service
+  namespace: platform-core
+  labels:
+    app: tenant-service
+    version: v1
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: tenant-service
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: tenant-service
+  template:
+    metadata:
+      labels:
+        app: tenant-service
+        version: v1
+        app.kubernetes.io/name: advancia
+        app.kubernetes.io/component: tenant-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: tenant-service-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: tenant-service
+        image: ghcr.io/advancia/tenant-service:1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 4008
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "4008"
+        - name: METRICS_PORT
+          value: "9090"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: redis-credentials
+              key: url
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service.platform-core.svc.cluster.local:4001"
+        - name: BILLING_SERVICE_URL
+          value: "http://billing-service.services.svc.cluster.local:4006"
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: tenant-service-secrets
+              key: SENTRY_DSN
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 4008
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 4008
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      terminationGracePeriodSeconds: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenant-service
+  namespace: platform-core
+  labels:
+    app: tenant-service
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: tenant-service
+spec:
+  selector:
+    app: tenant-service
+  ports:
+  - port: 4008
+    targetPort: 4008
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: tenant-service
+  namespace: platform-core
+  labels:
+    app: tenant-service
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: tenant-service
+spec:
+  selector:
+    matchLabels:
+      app: tenant-service
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tenant-service
+  namespace: platform-core
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tenant-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tenant-service
+  namespace: platform-core
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: tenant-service

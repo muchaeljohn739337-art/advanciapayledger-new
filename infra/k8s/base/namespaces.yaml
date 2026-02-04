@@ -1,0 +1,63 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: advancia-system
+  labels:
+    name: advancia-system
+    environment: production
+    purpose: system-services
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-core
+  labels:
+    name: platform-core
+    environment: production
+    purpose: core-services
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: services
+  labels:
+    name: services
+    environment: production
+    purpose: application-services
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    name: observability
+    environment: production
+    purpose: monitoring
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devops
+  labels:
+    name: devops
+    environment: production
+    purpose: devops-tools
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+  labels:
+    name: ingress-nginx
+    environment: production
+    purpose: ingress-controller
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    name: cert-manager
+    environment: production
+    purpose: certificate-management

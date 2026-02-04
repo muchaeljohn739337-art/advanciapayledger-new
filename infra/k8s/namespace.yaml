@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: advancia
+  labels:
+    name: advancia
+    environment: production
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: advancia-config
+  namespace: advancia
+data:
+  LOG_LEVEL: "info"
+  METRICS_INTERVAL: "30"
+  ALERT_THRESHOLD_CPU: "90"
+  ALERT_THRESHOLD_MEMORY: "90"
+  ALERT_THRESHOLD_DISK: "95"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: advancia-secrets
+  namespace: advancia
+type: Opaque
+data:
+  JWT_SECRET: <base64-encoded-jwt-secret>
+  JWT_REFRESH_SECRET: <base64-encoded-refresh-secret>
+  DATABASE_URL: <base64-encoded-database-url>
+  REDIS_URL: <base64-encoded-redis-url>
+  GEMINI_API_KEY: <base64-encoded-gemini-key>
+  OPENAI_API_KEY: <base64-encoded-openai-key>
+  ANTHROPIC_API_KEY: <base64-encoded-anthropic-key>
+  STRIPE_SECRET_KEY: <base64-encoded-stripe-key>
+  SUPABASE_SERVICE_ROLE_KEY: <base64-encoded-supabase-key>
+  SENTRY_DSN: <base64-encoded-sentry-dsn>
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: monitoring-storage
+  namespace: advancia
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+      requests:
+        storage: 10Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: database-storage
+  namespace: advancia
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+      requests:
+        storage: 100Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: advancia-service-account
+  namespace: advancia
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: advancia-role
+  namespace: advancia
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: advancia-rolebinding
+  namespace: advancia
+subjects:
+- kind: ServiceAccount
+  name: advancia-service-account
+  namespace: advancia
+roleRef:
+  kind: Role
+  name: advancia-role
+  apiGroup: rbac.authorization.k8s.io

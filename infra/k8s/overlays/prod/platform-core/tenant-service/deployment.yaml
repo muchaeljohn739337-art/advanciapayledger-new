@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenant-service
+  namespace: platform-core
+  labels:
+    app: tenant-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tenant-service
+  template:
+    metadata:
+      labels:
+        app: tenant-service
+    spec:
+      serviceAccountName: tenant-service-sa
+      containers:
+        - name: tenant-service
+          image: ghcr.io/advancia/tenant-service:REPLACE_TAG
+          ports:
+            - containerPort: 4002
+              name: http
+          envFrom:
+            - secretRef:
+                name: tenant-service-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "800m"
+              memory: "1Gi"

@@ -1,0 +1,362 @@
+name: Build and Deploy Remaining Services
+
+on:
+  push:
+    branches: [main, develop, staging]
+    paths:
+      - "services/notification-service/**"
+      - "services/security-service/**"
+      - "services/audit-log-service/**"
+      - "services/metering-service/**"
+      - "services/web3-event-service/**"
+      - ".github/workflows/build-remaining-services.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "services/notification-service/**"
+      - "services/security-service/**"
+      - "services/audit-log-service/**"
+      - "services/metering-service/**"
+      - "services/web3-event-service/**"
+      - ".github/workflows/build-remaining-services.yml"
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 032474760584.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  # Notification Service
+  test-notification-service:
+    name: Test Notification Service
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'services/notification-service/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: services/notification-service/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/notification-service
+        run: npm ci
+
+      - name: Run tests
+        working-directory: services/notification-service
+        run: npm test
+
+  build-notification-service:
+    name: Build Notification Service
+    runs-on: ubuntu-latest
+    needs: test-notification-service
+    if: contains(github.event.head_commit.modified, 'services/notification-service/') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        run: |
+          SERVICE_NAME="notification-service"
+          aws ecr describe-repositories --repository-names $SERVICE_NAME || \
+          aws ecr create-repository --repository-name $SERVICE_NAME --image-scanning-configuration scanOnPush=true
+
+          docker build -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }} \
+            -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest \
+            services/notification-service/
+
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest
+
+  # Security Service
+  test-security-service:
+    name: Test Security Service
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'services/security-service/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: services/security-service/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/security-service
+        run: npm ci
+
+      - name: Run tests
+        working-directory: services/security-service
+        run: npm test
+
+  build-security-service:
+    name: Build Security Service
+    runs-on: ubuntu-latest
+    needs: test-security-service
+    if: contains(github.event.head_commit.modified, 'services/security-service/') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        run: |
+          SERVICE_NAME="security-service"
+          aws ecr describe-repositories --repository-names $SERVICE_NAME || \
+          aws ecr create-repository --repository-name $SERVICE_NAME --image-scanning-configuration scanOnPush=true
+
+          docker build -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }} \
+            -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest \
+            services/security-service/
+
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest
+
+  # Audit Log Service
+  test-audit-log-service:
+    name: Test Audit Log Service
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'services/audit-log-service/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: services/audit-log-service/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/audit-log-service
+        run: npm ci
+
+      - name: Run tests
+        working-directory: services/audit-log-service
+        run: npm test
+
+  build-audit-log-service:
+    name: Build Audit Log Service
+    runs-on: ubuntu-latest
+    needs: test-audit-log-service
+    if: contains(github.event.head_commit.modified, 'services/audit-log-service/') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        run: |
+          SERVICE_NAME="audit-log-service"
+          aws ecr describe-repositories --repository-names $SERVICE_NAME || \
+          aws ecr create-repository --repository-name $SERVICE_NAME --image-scanning-configuration scanOnPush=true
+
+          docker build -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }} \
+            -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest \
+            services/audit-log-service/
+
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest
+
+  # Metering Service
+  test-metering-service:
+    name: Test Metering Service
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'services/metering-service/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: services/metering-service/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/metering-service
+        run: npm ci
+
+      - name: Run tests
+        working-directory: services/metering-service
+        run: npm test
+
+  build-metering-service:
+    name: Build Metering Service
+    runs-on: ubuntu-latest
+    needs: test-metering-service
+    if: contains(github.event.head_commit.modified, 'services/metering-service/') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        run: |
+          SERVICE_NAME="metering-service"
+          aws ecr describe-repositories --repository-names $SERVICE_NAME || \
+          aws ecr create-repository --repository-name $SERVICE_NAME --image-scanning-configuration scanOnPush=true
+
+          docker build -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }} \
+            -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest \
+            services/metering-service/
+
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest
+
+  # Web3 Event Service
+  test-web3-event-service:
+    name: Test Web3 Event Service
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'services/web3-event-service/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: services/web3-event-service/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/web3-event-service
+        run: npm ci
+
+      - name: Run tests
+        working-directory: services/web3-event-service
+        run: npm test
+
+  build-web3-event-service:
+    name: Build Web3 Event Service
+    runs-on: ubuntu-latest
+    needs: test-web3-event-service
+    if: contains(github.event.head_commit.modified, 'services/web3-event-service/') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        run: |
+          SERVICE_NAME="web3-event-service"
+          aws ecr describe-repositories --repository-names $SERVICE_NAME || \
+          aws ecr create-repository --repository-name $SERVICE_NAME --image-scanning-configuration scanOnPush=true
+
+          docker build -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }} \
+            -t ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest \
+            services/web3-event-service/
+
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/$SERVICE_NAME:latest
+
+  # Update manifests for all built services
+  update-manifests:
+    name: Update Kubernetes Manifests
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-notification-service,
+        build-security-service,
+        build-audit-log-service,
+        build-metering-service,
+        build-web3-event-service,
+      ]
+    if: always() && (needs.build-notification-service.result == 'success' || needs.build-security-service.result == 'success' || needs.build-audit-log-service.result == 'success' || needs.build-metering-service.result == 'success' || needs.build-web3-event-service.result == 'success')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update manifests
+        run: |
+          # Determine which services were updated and update their manifests
+          if [ "${{ needs.build-notification-service.result }}" == "success" ]; then
+            echo "Updating notification-service manifests"
+            # Add manifest update logic here
+          fi
+
+          if [ "${{ needs.build-security-service.result }}" == "success" ]; then
+            echo "Updating security-service manifests"
+            # Add manifest update logic here
+          fi
+
+          if [ "${{ needs.build-audit-log-service.result }}" == "success" ]; then
+            echo "Updating audit-log-service manifests"
+            # Add manifest update logic here
+          fi
+
+          if [ "${{ needs.build-metering-service.result }}" == "success" ]; then
+            echo "Updating metering-service manifests"
+            # Add manifest update logic here
+          fi
+
+          if [ "${{ needs.build-web3-event-service.result }}" == "success" ]; then
+            echo "Updating web3-event-service manifests"
+            # Add manifest update logic here
+          fi

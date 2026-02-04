@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Globe } from "lucide-react";
 import withAdminAuth from "@/hoc/withAdminAuth";
+import withRoleGuard from "@/src/components/withRoleGuard";
+import { UserRole } from "@/src/types/user";
 import BusinessEcosystem from "@/components/BusinessEcosystem";
 
 function AdminConsolePage() {
@@ -54,6 +56,12 @@ function AdminConsolePage() {
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition"
               >
                 Exit Admin
+              </Link>
+              <Link
+                href="/dev"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition font-mono text-sm"
+              >
+                Dev Dashboard
               </Link>
             </div>
           </div>
@@ -1078,4 +1086,7 @@ function SettingRow({ label, description, enabled }: any) {
   );
 }
 
-export default withAdminAuth(AdminConsolePage);
+export default withRoleGuard(AdminConsolePage, [
+  UserRole.FACILITY_ADMIN,
+  UserRole.SUPER_ADMIN,
+]);

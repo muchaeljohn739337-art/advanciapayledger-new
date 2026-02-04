@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: web3-event-service-sm
+  namespace: services
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: web3-event-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

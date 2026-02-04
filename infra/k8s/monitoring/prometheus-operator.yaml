@@ -1,0 +1,376 @@
+---
+# Prometheus Operator for Advancia Platform
+# This manifest deploys the Prometheus Operator with custom configuration
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    name: observability
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-operator
+  namespace: observability
+  labels:
+    app: prometheus-operator
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-operator
+  labels:
+    app: prometheus-operator
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/metrics
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["get"]
+- apiGroups:
+  - "networking.k8s.io"
+  resources:
+  - ingresses
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-operator
+  labels:
+    app: prometheus-operator
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-operator
+subjects:
+- kind: ServiceAccount
+  name: prometheus-operator
+  namespace: observability
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-operator
+  namespace: observability
+  labels:
+    app: prometheus-operator
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-operator
+  template:
+    metadata:
+      labels:
+        app: prometheus-operator
+        app.kubernetes.io/name: advancia
+        app.kubernetes.io/component: monitoring
+    spec:
+      serviceAccountName: prometheus-operator
+      containers:
+      - name: prometheus-operator
+        image: quay.io/prometheus-operator/prometheus-operator:v0.63.0
+        args:
+        - --kubelet-service=kubelet
+        - --logtostderr=true
+        - --stderrthreshold=info
+        - --log-level=info
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: advancia-prometheus
+  namespace: observability
+  labels:
+    app: prometheus
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+spec:
+  serviceAccountName: prometheus-operator
+  serviceMonitorSelector:
+    matchLabels:
+      app.kubernetes.io/name: advancia
+  ruleSelector:
+    matchLabels:
+      app.kubernetes.io/name: advancia
+  resources:
+    requests:
+      memory: 400Mi
+      cpu: 100m
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+  retention: 30d
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: gp2
+        resources:
+          requests:
+            storage: 50Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: observability
+  labels:
+    app: prometheus
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - name: web
+    port: 9090
+    targetPort: 9090
+  type: ClusterIP
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  name: advancia-alertmanager
+  namespace: observability
+  labels:
+    app: alertmanager
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+spec:
+  replicas: 3
+  serviceAccountName: prometheus-operator
+  resources:
+    requests:
+      memory: 400Mi
+      cpu: 100m
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: observability
+  labels:
+    app: alertmanager
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    alertmanager: advancia-alertmanager
+  ports:
+  - name: web
+    port: 9093
+    targetPort: 9093
+  type: ClusterIP
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: advancia-alerts
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+spec:
+  groups:
+  - name: advancia.rules
+    rules:
+    - alert: ServiceDown
+      expr: up == 0
+      for: 5m
+      labels:
+        severity: critical
+        app.kubernetes.io/name: advancia
+      annotations:
+        summary: "Service {{ $labels.job }} is down"
+        description: "Service {{ $labels.job }} has been down for more than 5 minutes."
+    
+    - alert: HighCPUUsage
+      expr: rate(container_cpu_usage_seconds_total[5m]) * 100 > 80
+      for: 10m
+      labels:
+        severity: warning
+        app.kubernetes.io/name: advancia
+      annotations:
+        summary: "High CPU usage on {{ $labels.pod }}"
+        description: "CPU usage is above 80% for more than 10 minutes on pod {{ $labels.pod }}."
+    
+    - alert: HighMemoryUsage
+      expr: container_memory_usage_bytes / container_spec_memory_limit_bytes * 100 > 85
+      for: 10m
+      labels:
+        severity: warning
+        app.kubernetes.io/name: advancia
+      annotations:
+        summary: "High memory usage on {{ $labels.pod }}"
+        description: "Memory usage is above 85% for more than 10 minutes on pod {{ $labels.pod }}."
+    
+    - alert: PodCrashLooping
+      expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+      for: 5m
+      labels:
+        severity: critical
+        app.kubernetes.io/name: advancia
+      annotations:
+        summary: "Pod {{ $labels.pod }} is crash looping"
+        description: "Pod {{ $labels.pod }} has been restarting {{ $value }} times in the last 15 minutes."
+    
+    - alert: HighErrorRate
+      expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+      for: 5m
+      labels:
+        severity: critical
+        app.kubernetes.io/name: advancia
+      annotations:
+        summary: "High error rate on {{ $labels.service }}"
+        description: "Error rate is above 5% for more than 5 minutes on service {{ $labels.service }}."
+    
+    - alert: DatabaseConnectionFailure
+      expr: up{job="postgres"} == 0
+      for: 2m
+      labels:
+        severity: critical
+        app.kubernetes.io/name: advancia
+      annotations:
+        summary: "Database connection failure"
+        description: "Cannot connect to PostgreSQL database for more than 2 minutes."
+    
+    - alert: RedisConnectionFailure
+      expr: up{job="redis"} == 0
+      for: 2m
+      labels:
+        severity: critical
+        app.kubernetes.io/name: advancia
+      annotations:
+        summary: "Redis connection failure"
+        description: "Cannot connect to Redis for more than 2 minutes."
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'alerts@advancia.com'
+      smtp_auth_username: 'alerts@advancia.com'
+      smtp_auth_password: 'your-smtp-password'
+    
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: 'web.hook'
+      routes:
+      - match:
+          severity: critical
+        receiver: 'critical-alerts'
+      - match:
+          severity: warning
+        receiver: 'warning-alerts'
+    
+    receivers:
+    - name: 'web.hook'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts'
+        title: 'Advancia Platform Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+    
+    - name: 'critical-alerts'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#critical-alerts'
+        title: '🚨 Critical Alert: Advancia Platform'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+      email_configs:
+      - to: 'ops-team@advancia.com'
+        subject: '🚨 Critical Alert: Advancia Platform'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+    
+    - name: 'warning-alerts'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#warnings'
+        title: '⚠️ Warning: Advancia Platform'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: prometheus-operator
+  namespace: observability
+  labels:
+    app: prometheus-operator
+    app.kubernetes.io/name: advancia
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: prometheus-operator
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics

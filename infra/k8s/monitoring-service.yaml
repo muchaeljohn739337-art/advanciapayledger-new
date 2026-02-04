@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-service
+  namespace: advancia
+  labels:
+    app: monitoring-service
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: monitoring-service
+  template:
+    metadata:
+      labels:
+        app: monitoring-service
+        version: v1
+    spec:
+      containers:
+      - name: monitoring-service
+        image: advancia/monitoring-service:latest
+        ports:
+        - containerPort: 3002
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3002"
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: advancia-secrets
+              key: REDIS_URL
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: advancia-secrets
+              key: DATABASE_URL
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: metrics-storage
+          mountPath: /app/metrics
+      volumes:
+      - name: metrics-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring-service
+  namespace: advancia
+  labels:
+    app: monitoring-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3002
+    targetPort: 3002
+    name: http
+  selector:
+    app: monitoring-service
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: monitoring-service
+  namespace: advancia
+  labels:
+    app: monitoring-service
+spec:
+  selector:
+    matchLabels:
+      app: monitoring-service
+  endpoints:
+  - port: http
+    path: /metrics/prometheus
+    interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: monitoring-service-metrics
+  namespace: advancia
+  labels:
+    app: monitoring-service
+spec:
+  selector:
+    matchLabels:
+      app: monitoring-service
+  endpoints:
+  - port: http
+    path: /metrics/prometheus
+    interval: 30s

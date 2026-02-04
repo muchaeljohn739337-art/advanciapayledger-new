@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metering-service
+  namespace: platform-core
+  labels:
+    app: metering-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: metering-service
+  template:
+    metadata:
+      labels:
+        app: metering-service
+    spec:
+      serviceAccountName: metering-service-sa
+      containers:
+        - name: metering-service
+          image: ghcr.io/advancia/metering-service:REPLACE_TAG
+          ports:
+            - containerPort: 4004
+              name: http
+          envFrom:
+            - secretRef:
+                name: metering-service-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"

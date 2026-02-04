@@ -14,8 +14,10 @@ export default function LandingPage() {
               <span className="text-2xl font-bold text-blue-600">Advancia Pay</span>
             </div>
             <div className="flex items-center space-x-4">
+              <Link href="/playground" className="text-gray-700 hover:text-blue-600">Playground</Link>
               <Link href="/features" className="text-gray-700 hover:text-blue-600">Features</Link>
               <Link href="/pricing" className="text-gray-700 hover:text-blue-600">Pricing</Link>
+              <Link href="/dev" className="text-gray-700 hover:text-blue-600 font-mono text-sm">Dev</Link>
               <Link href="/login" className="text-gray-700 hover:text-blue-600">Login</Link>
               <Link href="/register" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                 Get Started

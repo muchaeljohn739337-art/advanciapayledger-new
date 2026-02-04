@@ -1,0 +1,737 @@
+openapi: 3.0.3
+info:
+  title: Advancia Pay Ledger - Payment Service API
+  description: |
+    Comprehensive payment processing API for healthcare facilities.
+    Supports both cryptocurrency and traditional payment methods with HIPAA compliance.
+  version: 1.0.0
+  contact:
+    name: Advancia Pay Ledger Support
+    email: api-support@advanciapay.com
+    url: https://advanciapay.com/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.advanciapay.com/payment-service
+    description: Production server
+  - url: https://staging-api.advanciapay.com/payment-service
+    description: Staging server
+  - url: http://localhost:3001
+    description: Development server
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Service health check
+      description: Returns the current health status of the payment service
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/crypto:
+    post:
+      tags:
+        - Crypto Payments
+      summary: Create a cryptocurrency payment
+      description: |
+        Initiates a new cryptocurrency payment. Supports multiple cryptocurrencies
+        including Bitcoin, Ethereum, USDC, and Solana.
+      operationId: createCryptoPayment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCryptoPaymentRequest'
+      responses:
+        '201':
+          description: Crypto payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/fiat:
+    post:
+      tags:
+        - Fiat Payments
+      summary: Create a fiat payment
+      description: |
+        Initiates a new fiat payment using credit cards, debit cards, ACH, or wire transfers.
+      operationId: createFiatPayment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFiatPaymentRequest'
+      responses:
+        '201':
+          description: Fiat payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/{paymentId}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment details
+      description: Retrieves detailed information about a specific payment
+      operationId: getPayment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          description: Unique payment identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments:
+    get:
+      tags:
+        - Payments
+      summary: List payments
+      description: Retrieves a paginated list of payments for the authenticated user
+      operationId: listPayments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by payment status
+          schema:
+            $ref: '#/components/schemas/PaymentStatus'
+        - name: type
+          in: query
+          description: Filter by payment type
+          schema:
+            $ref: '#/components/schemas/PaymentType'
+        - name: startDate
+          in: query
+          description: Filter by start date
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          description: Filter by end date
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          description: Number of results to return
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of results to skip
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/{paymentId}/confirm:
+    post:
+      tags:
+        - Payments
+      summary: Confirm payment
+      description: Manually confirm a payment (for manual verification workflows)
+      operationId: confirmPayment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          description: Unique payment identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Payment cannot be confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/{paymentId}/refund:
+    post:
+      tags:
+        - Payments
+      summary: Refund payment
+      description: Process a refund for a completed payment
+      operationId: refundPayment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          description: Unique payment identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+      responses:
+        '200':
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Payment cannot be refunded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/webhooks/crypto:
+    post:
+      tags:
+        - Webhooks
+      summary: Handle crypto payment webhook
+      description: Processes webhook notifications from crypto payment providers
+      operationId: handleCryptoWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CryptoWebhookPayload'
+      responses:
+        '200':
+          description: Webhook processed successfully
+        '400':
+          description: Invalid webhook payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/webhooks/fiat:
+    post:
+      tags:
+        - Webhooks
+      summary: Handle fiat payment webhook
+      description: Processes webhook notifications from fiat payment providers
+      operationId: handleFiatWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiatWebhookPayload'
+      responses:
+        '200':
+          description: Webhook processed successfully
+        '400':
+          description: Invalid webhook payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        service:
+          type: string
+          example: payment-service
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          example: healthy
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        version:
+          type: string
+          example: "1.0.0"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Payment not found"
+        code:
+          type: string
+          example: "PAYMENT_NOT_FOUND"
+        message:
+          type: string
+          example: "The specified payment could not be found"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    PaymentType:
+      type: string
+      enum: [crypto, fiat]
+      example: crypto
+
+    PaymentStatus:
+      type: string
+      enum: [pending, processing, completed, failed, refunded, cancelled]
+      example: pending
+
+    PaymentMethod:
+      type: string
+      enum: [credit_card, debit_card, ach, wire, crypto]
+      example: credit_card
+
+    CryptoCurrency:
+      type: string
+      enum: [BTC, ETH, USDC, USDT, SOL, ADA]
+      example: ETH
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        type:
+          $ref: '#/components/schemas/PaymentType'
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        amount:
+          type: number
+          format: decimal
+          example: 100.00
+        currency:
+          type: string
+          example: "USD"
+        cryptoCurrency:
+          $ref: '#/components/schemas/CryptoCurrency'
+        walletAddress:
+          type: string
+          example: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45"
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethod'
+        transactionHash:
+          type: string
+          example: "0x1234567890abcdef1234567890abcdef12345678"
+        transactionId:
+          type: string
+          example: "txn_1234567890"
+        blockNumber:
+          type: integer
+          example: 12345678
+        expectedAmount:
+          type: number
+          format: decimal
+          example: 0.033
+        expiryTime:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:45:00Z"
+        refundId:
+          type: string
+          example: "refund_550e8400-e29b-41d4-a716-446655440000"
+        refundReason:
+          type: string
+          example: "Customer requested refund"
+        userId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            patientId: "PAT123456"
+            invoiceId: "INV789012"
+        processorResponse:
+          type: object
+          additionalProperties: true
+        failureReason:
+          type: string
+          example: "Insufficient funds"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        completedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:35:00Z"
+        refundedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:40:00Z"
+
+    CreateCryptoPaymentRequest:
+      type: object
+      required:
+        - amount
+        - currency
+        - cryptoCurrency
+        - walletAddress
+        - userId
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 100.00
+        currency:
+          type: string
+          example: "USD"
+        cryptoCurrency:
+          $ref: '#/components/schemas/CryptoCurrency'
+        walletAddress:
+          type: string
+          example: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45"
+        network:
+          type: string
+          enum: [ethereum, polygon, solana, bitcoin]
+          example: ethereum
+        userId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            patientId: "PAT123456"
+            invoiceId: "INV789012"
+
+    CreateFiatPaymentRequest:
+      type: object
+      required:
+        - amount
+        - currency
+        - paymentMethod
+        - cardDetails
+        - userId
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 100.00
+        currency:
+          type: string
+          example: "USD"
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethod'
+        cardDetails:
+          $ref: '#/components/schemas/CardDetails'
+        billingAddress:
+          $ref: '#/components/schemas/BillingAddress'
+        userId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            patientId: "PAT123456"
+            invoiceId: "INV789012"
+
+    CardDetails:
+      type: object
+      required:
+        - number
+        - expiry
+        - cvv
+        - holderName
+      properties:
+        number:
+          type: string
+          pattern: '^\d{16}$'
+          example: "4242424242424242"
+        expiry:
+          type: string
+          pattern: '^(0[1-9]|1[0-2])\/\d{4}$'
+          example: "12/2025"
+        cvv:
+          type: string
+          pattern: '^\d{3,4}$'
+          example: "123"
+        holderName:
+          type: string
+          example: "John Doe"
+
+    BillingAddress:
+      type: object
+      required:
+        - street
+        - city
+        - state
+        - zipCode
+        - country
+      properties:
+        street:
+          type: string
+          example: "123 Main St"
+        city:
+          type: string
+          example: "New York"
+        state:
+          type: string
+          example: "NY"
+        zipCode:
+          type: string
+          example: "10001"
+        country:
+          type: string
+          example: "US"
+
+    PaymentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        payment:
+          $ref: '#/components/schemas/Payment'
+        paymentUrl:
+          type: string
+          example: "https://payment.example.com/pay/123456"
+        qrCode:
+          type: string
+          example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+        redirectUrl:
+          type: string
+          example: "https://payment.example.com/redirect/123456"
+        error:
+          type: string
+          example: "Payment processing failed"
+
+    RefundRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 50.00
+        reason:
+          type: string
+          example: "Customer requested refund"
+
+    CryptoWebhookPayload:
+      type: object
+      required:
+        - paymentId
+        - status
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          enum: [confirmed, failed, pending]
+          example: confirmed
+        transactionHash:
+          type: string
+          example: "0x1234567890abcdef1234567890abcdef12345678"
+        blockNumber:
+          type: integer
+          example: 12345678
+        confirmations:
+          type: integer
+          example: 12
+        reason:
+          type: string
+          example: "Transaction confirmed"
+
+    FiatWebhookPayload:
+      type: object
+      required:
+        - paymentId
+        - status
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          enum: [succeeded, failed, pending]
+          example: succeeded
+        transactionId:
+          type: string
+          example: "txn_1234567890"
+        processorResponse:
+          type: object
+          additionalProperties: true
+          example:
+            authorizationCode: "123456"
+            avsResult: "Y"
+            cvvResult: "M"
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 150
+        limit:
+          type: integer
+          example: 50
+        offset:
+          type: integer
+          example: 0
+        hasMore:
+          type: boolean
+          example: true
+
+tags:
+  - name: Health
+    description: Service health monitoring
+  - name: Crypto Payments
+    description: Cryptocurrency payment processing
+  - name: Fiat Payments
+    description: Traditional payment processing
+  - name: Payments
+    description: General payment operations
+  - name: Webhooks
+    description: Webhook handling for payment notifications

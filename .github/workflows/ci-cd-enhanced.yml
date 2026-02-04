@@ -1,0 +1,383 @@
+name: Enhanced CI/CD Pipeline for Advancia Platform
+
+on:
+  push:
+    branches: [ main, develop, staging ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+  pull_request:
+    branches: [ main, develop ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: advancia
+  NODE_VERSION: '18'
+  GO_VERSION: '1.21'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Code Quality and Security Checks
+  quality-checks:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.changes.outputs.should-deploy }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Detect changes
+      id: changes
+      run: |
+        if [ "${{ github.event_name }}" == "push" ]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+        elif [ "${{ github.event_name }}" == "release" ]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+        else
+          echo "should-deploy=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        pip install -r requirements.txt
+        go mod download
+    
+    - name: Run linting
+      run: |
+        npm run lint:frontend
+        npm run lint:backend
+        go fmt ./...
+        go vet ./...
+        flake8 backend/
+        black --check backend/
+    
+    - name: Run security scans
+      run: |
+        npm audit --audit-level moderate
+        gosec ./...
+        safety check
+        trivy fs --scanners vuln,config,secret .
+    
+    - name: Run unit tests
+      run: |
+        npm run test:unit:frontend
+        npm run test:unit:backend
+        go test -race -coverprofile=coverage.out ./...
+        pytest backend/tests/unit/
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.out,./backend/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+    
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # Build and Test Services
+  build-and-test:
+    name: Build & Test Services
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    strategy:
+      matrix:
+        service: [api-gateway, auth-service, tenant-service, billing-service, monitoring-service, ai-orchestrator]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=semver,pattern={{version}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./services/${{ matrix.service }}/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+    
+    - name: Run integration tests
+      run: |
+        docker-compose -f docker-compose.test.yml up -d ${{ matrix.service }}
+        npm run test:integration:${{ matrix.service }}
+        docker-compose -f docker-compose.test.yml down
+
+  # Infrastructure Validation
+  infra-validation:
+    name: Infrastructure Validation
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    if: needs.quality-checks.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: '1.5.7'
+        terraform_wrapper: false
+    
+    - name: Setup AWS CLI
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Terraform Format Check
+      run: terraform fmt -check -recursive -diff infra/terraform/
+    
+    - name: Terraform Init
+      run: terraform -chdir=infra/terraform/envs/staging init -input=false
+    
+    - name: Terraform Validate
+      run: terraform -chdir=infra/terraform/envs/staging validate -no-color
+    
+    - name: Terraform Plan
+      run: terraform -chdir=infra/terraform/envs/staging plan -out=tfplan -input=false
+    
+    - name: Terraform Security Scan
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: infra/terraform
+        framework: terraform
+        skip_check: CKV_AWS_20,CKV_AWS_21
+
+  # Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-test, infra-validation]
+    if: github.ref == 'refs/heads/develop' && needs.quality-checks.outputs.should-deploy == 'true'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+    
+    - name: Deploy infrastructure
+      run: |
+        chmod +x infra/terraform/deploy.sh
+        ./infra/terraform/deploy.sh -e staging -f infra/terraform/envs/staging/terraform.tfvars
+    
+    - name: Deploy Kubernetes resources
+      run: |
+        chmod +x infra/k8s/deploy.sh
+        ./infra/k8s/deploy.sh -e staging --wait
+    
+    - name: Setup secrets
+      run: |
+        chmod +x infra/k8s/secrets/setup-secrets.sh
+        ./infra/k8s/secrets/setup-secrets.sh -e staging -g
+    
+    - name: Run smoke tests
+      run: |
+        npm run test:smoke:staging
+        npm run test:e2e:staging
+    
+    - name: Run performance tests
+      run: |
+        npm run test:performance:staging
+    
+    - name: Notify team
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-test, infra-validation]
+    if: github.event_name == 'release' && needs.quality-checks.outputs.should-deploy == 'true'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+    
+    - name: Deploy infrastructure
+      run: |
+        chmod +x infra/terraform/deploy.sh
+        ./infra/terraform/deploy.sh -e prod -f infra/terraform/envs/prod/terraform.tfvars
+    
+    - name: Deploy Kubernetes resources
+      run: |
+        chmod +x infra/k8s/deploy.sh
+        ./infra/k8s/deploy.sh -e prod --wait
+    
+    - name: Setup secrets
+      run: |
+        chmod +x infra/k8s/secrets/setup-secrets.sh
+        ./infra/k8s/secrets/setup-secrets.sh -e prod -g
+    
+    - name: Run smoke tests
+      run: |
+        npm run test:smoke:production
+        npm run test:e2e:production
+    
+    - name: Run security scans on production
+      run: |
+        npm run test:security:production
+    
+    - name: Create rollback point
+      run: |
+        kubectl get deployment -n platform-core -o yaml > rollback-backup.yaml
+        echo "Rollback backup created"
+    
+    - name: Notify team
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        text: "🚀 Production deployment completed successfully!"
+
+  # Post-deployment Monitoring
+  post-deploy-monitoring:
+    name: Post-Deployment Monitoring
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always() && (needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup monitoring tools
+      run: |
+        npm install -g @newrelic/newrelic
+        npm install -g datadog-ci
+    
+    - name: Check service health
+      run: |
+        npm run health:check:staging || true
+        npm run health:check:production || true
+    
+    - name: Verify monitoring alerts
+      run: |
+        npm run alerts:verify
+    
+    - name: Generate deployment report
+      run: |
+        npm run report:generate
+    
+    - name: Upload deployment artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-report
+        path: deployment-report.pdf
+        retention-days: 30
+
+  # Rollback on Failure
+  rollback-on-failure:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: failure() && needs.deploy-production.result == 'failure'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+    
+    - name: Rollback deployment
+      run: |
+        chmod +x infra/k8s/deploy.sh
+        ./infra/k8s/deploy.sh -e prod rollback
+    
+    - name: Notify team of rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#alerts'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        text: "🚨 Production deployment failed and has been rolled back!"

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient } from '@/lib/api/apiClient'; // Assuming you have an api client
+import { api } from "@/lib/api/client";
 
 interface User {
   id: string;
@@ -29,8 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const response = await apiClient.get('/users/me');
+          const response = await api.get("/users/me");
           setUser(response.data);
         } catch (error) {
           console.error('Failed to fetch user', error);
@@ -43,10 +42,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (token: string) => {
-    localStorage.setItem('token', token);
-    apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    localStorage.setItem("token", token);
     try {
-      const response = await apiClient.get('/users/me');
+      const response = await api.get("/users/me");
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user after login', error);
@@ -54,8 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    delete apiClient.defaults.headers.common['Authorization'];
+    localStorage.removeItem("token");
     setUser(null);
   };
 

@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: metering-service-sm
+  namespace: platform-core
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: metering-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
