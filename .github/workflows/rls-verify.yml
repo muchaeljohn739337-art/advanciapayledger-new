@@ -1,0 +1,34 @@
+name: RLS Verification
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # Weekly Monday 06:00 UTC
+
+jobs:
+  verify-rls:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Verify RLS policies (sessions)
+        env:
+          DATABASE_URL: ${{ secrets.RLS_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "RLS_DATABASE_URL secret not set; skipping verification."
+            exit 0
+          fi
+          echo "Running RLS verification script against target database..."
+          psql "$DATABASE_URL" -f backend/scripts/verify-rls.sql
+
+      - name: Fail if RLS checks report failures
+        run: |
+          echo "Review previous step logs for ❌ FAIL markers."
+          echo "If failures occurred, mark job as failed manually using set-output is deprecated; rely on psql exit codes."

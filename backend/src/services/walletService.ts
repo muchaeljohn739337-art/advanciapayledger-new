@@ -1,12 +1,13 @@
-import { PrismaClient, Prisma } from '@prisma/client';
-import RedisLockService from './redisLockService';
-import IdempotencyService from './idempotencyService';
+import { PrismaClient, Prisma } from "@prisma/client";
+import { Decimal } from "decimal.js";
+import RedisLockService from "./redisLockService";
+import IdempotencyService from "./idempotencyService";
 
 interface WalletTransactionOptions {
   userId: string;
   amount: number;
   currency: string;
-  type: 'DEBIT' | 'CREDIT';
+  type: "DEBIT" | "CREDIT";
   description: string;
   idempotencyKey?: string;
   metadata?: any;
@@ -27,7 +28,7 @@ export class WalletService {
   constructor(
     prisma: PrismaClient,
     lockService: RedisLockService,
-    idempotencyService: IdempotencyService
+    idempotencyService: IdempotencyService,
   ) {
     this.prisma = prisma;
     this.lockService = lockService;
@@ -35,12 +36,20 @@ export class WalletService {
   }
 
   async executeTransaction(
-    options: WalletTransactionOptions
+    options: WalletTransactionOptions,
   ): Promise<WalletTransactionResult> {
-    const { userId, amount, currency, type, description, idempotencyKey, metadata } = options;
+    const {
+      userId,
+      amount,
+      currency,
+      type,
+      description,
+      idempotencyKey,
+      metadata,
+    } = options;
 
     if (amount <= 0) {
-      return { success: false, error: 'Amount must be positive' };
+      return { success: false, error: "Amount must be positive" };
     }
 
     const effectiveIdempotencyKey =
@@ -52,7 +61,7 @@ export class WalletService {
       });
 
     const idempotencyCheck = await this.idempotencyService.checkIdempotency(
-      effectiveIdempotencyKey
+      effectiveIdempotencyKey,
     );
 
     if (idempotencyCheck.isProcessed) {
@@ -67,24 +76,24 @@ export class WalletService {
         async () => {
           return await this.performAtomicTransaction(options);
         },
-        { ttl: 5, retries: 3, retryDelay: 100 }
+        { ttl: 5, retries: 3, retryDelay: 100 },
       );
 
       await this.idempotencyService.storeIdempotencyResult(
         effectiveIdempotencyKey,
-        result
+        result,
       );
 
       return result;
     } catch (error: any) {
       const errorResult = {
         success: false,
-        error: error.message || 'Transaction failed',
+        error: error.message || "Transaction failed",
       };
 
       await this.idempotencyService.storeIdempotencyResult(
         effectiveIdempotencyKey,
-        errorResult
+        errorResult,
       );
 
       return errorResult;
@@ -92,90 +101,94 @@ export class WalletService {
   }
 
   private async performAtomicTransaction(
-    options: WalletTransactionOptions
+    options: WalletTransactionOptions,
   ): Promise<WalletTransactionResult> {
     const { userId, amount, currency, type, description, metadata } = options;
 
-    return await this.prisma.$transaction(async (tx) => {
-      let wallet = await tx.wallet.findFirst({
-        where: {
-          userId,
-          blockchain: currency,
-          isActive: true,
-        },
-        select: {
-          id: true,
-          balanceUSD: true,
-        },
-      });
-
-      if (!wallet) {
-        throw new Error('Wallet not found');
-      }
-
-      const currentBalance = wallet.balanceUSD || 0;
-      const newBalance = type === 'DEBIT' 
-        ? currentBalance - amount 
-        : currentBalance + amount;
-
-      if (type === 'DEBIT' && newBalance < 0) {
-        throw new Error('Insufficient balance');
-      }
-
-      const updateResult = await tx.wallet.updateMany({
-        where: {
-          id: wallet.id,
-          balanceUSD: currentBalance,
-        },
-        data: {
-          balanceUSD: newBalance,
-          lastSyncAt: new Date(),
-        },
-      });
-
-      if (updateResult.count === 0) {
-        throw new Error('Balance changed during transaction (race condition detected)');
-      }
-
-      const transaction = await tx.transaction.create({
-        data: {
-          userId,
-          walletId: wallet.id,
-          amount: new Prisma.Decimal(amount),
-          currency,
-          type,
-          status: 'COMPLETED',
-          description,
-          paymentMethod: 'WALLET',
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          userId,
-          action: `WALLET_${type}`,
-          resource: 'wallet',
-          resourceId: wallet.id,
-          details: {
-            transactionId: transaction.id,
-            amount,
-            currency,
-            oldBalance: currentBalance,
-            newBalance,
-            metadata,
+    return await this.prisma.$transaction(
+      async (tx) => {
+        let wallet = await tx.wallet.findFirst({
+          where: {
+            userId,
+            blockchain: currency,
+            isActive: true,
           },
-        },
-      });
+          select: {
+            id: true,
+            balanceUSD: true,
+          },
+        });
 
-      return {
-        success: true,
-        transactionId: transaction.id,
-        newBalance,
-      };
-    }, {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      timeout: 5000,
-    });
+        if (!wallet) {
+          throw new Error("Wallet not found");
+        }
+
+        const currentBalance = wallet.balanceUSD || 0;
+        const newBalance =
+          type === "DEBIT" ? currentBalance - amount : currentBalance + amount;
+
+        if (type === "DEBIT" && newBalance < 0) {
+          throw new Error("Insufficient balance");
+        }
+
+        const updateResult = await tx.wallet.updateMany({
+          where: {
+            id: wallet.id,
+            balanceUSD: currentBalance,
+          },
+          data: {
+            balanceUSD: newBalance,
+            lastSyncAt: new Date(),
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new Error(
+            "Balance changed during transaction (race condition detected)",
+          );
+        }
+
+        const transaction = await tx.transaction.create({
+          data: {
+            userId,
+            walletId: wallet.id,
+            amount: new Decimal(amount),
+            currency,
+            type,
+            status: "COMPLETED",
+            description,
+            paymentMethod: "WALLET",
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            userId,
+            action: `WALLET_${type}`,
+            resource: "wallet",
+            resourceId: wallet.id,
+            details: {
+              transactionId: transaction.id,
+              amount,
+              currency,
+              oldBalance: currentBalance,
+              newBalance,
+              metadata,
+            },
+          },
+        });
+
+        return {
+          success: true,
+          transactionId: transaction.id,
+          newBalance,
+        };
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        timeout: 5000,
+      },
+    );
   }
 
   async getBalance(userId: string, currency: string): Promise<number> {
@@ -196,7 +209,7 @@ export class WalletService {
   async validateBalance(
     userId: string,
     currency: string,
-    requiredAmount: number
+    requiredAmount: number,
   ): Promise<boolean> {
     const balance = await this.getBalance(userId, currency);
     return balance >= requiredAmount;
@@ -207,15 +220,15 @@ export class WalletService {
     toUserId: string,
     amount: number,
     currency: string,
-    idempotencyKey?: string
+    idempotencyKey?: string,
   ): Promise<WalletTransactionResult> {
     if (fromUserId === toUserId) {
-      return { success: false, error: 'Cannot transfer to self' };
+      return { success: false, error: "Cannot transfer to self" };
     }
 
     const effectiveIdempotencyKey =
       idempotencyKey ||
-      this.idempotencyService.generateIdempotencyKey(fromUserId, 'TRANSFER', {
+      this.idempotencyService.generateIdempotencyKey(fromUserId, "TRANSFER", {
         toUserId,
         amount,
         currency,
@@ -223,7 +236,7 @@ export class WalletService {
       });
 
     const idempotencyCheck = await this.idempotencyService.checkIdempotency(
-      effectiveIdempotencyKey
+      effectiveIdempotencyKey,
     );
 
     if (idempotencyCheck.isProcessed) {
@@ -237,13 +250,13 @@ export class WalletService {
 
     try {
       const result = await this.lockService.withLock(
-        lockKeys.join(':'),
+        lockKeys.join(":"),
         async () => {
           const debitResult = await this.executeTransaction({
             userId: fromUserId,
             amount,
             currency,
-            type: 'DEBIT',
+            type: "DEBIT",
             description: `Transfer to ${toUserId}`,
             metadata: { transferTo: toUserId },
           });
@@ -256,13 +269,15 @@ export class WalletService {
             userId: toUserId,
             amount,
             currency,
-            type: 'CREDIT',
+            type: "CREDIT",
             description: `Transfer from ${fromUserId}`,
             metadata: { transferFrom: fromUserId },
           });
 
           if (!creditResult.success) {
-            throw new Error('Credit failed after debit - manual intervention required');
+            throw new Error(
+              "Credit failed after debit - manual intervention required",
+            );
           }
 
           return {
@@ -271,24 +286,24 @@ export class WalletService {
             newBalance: debitResult.newBalance,
           };
         },
-        { ttl: 10, retries: 3, retryDelay: 100 }
+        { ttl: 10, retries: 3, retryDelay: 100 },
       );
 
       await this.idempotencyService.storeIdempotencyResult(
         effectiveIdempotencyKey,
-        result
+        result,
       );
 
       return result;
     } catch (error: any) {
       const errorResult = {
         success: false,
-        error: error.message || 'Transfer failed',
+        error: error.message || "Transfer failed",
       };
 
       await this.idempotencyService.storeIdempotencyResult(
         effectiveIdempotencyKey,
-        errorResult
+        errorResult,
       );
 
       return errorResult;

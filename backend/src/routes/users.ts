@@ -1,13 +1,12 @@
-import { Router } from 'express';
-import { prisma } from "../utils/prisma";
-import { authenticate } from '../middleware/auth';
-import { logger } from '../utils/logger';
-import { UserStatus } from "@prisma/client";
+import { Router } from "express";
+import { prisma } from "../lib/prisma";
+import { authenticate } from "../middleware/auth";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
 // Get current user profile
-router.get('/me', authenticate, async (req, res) => {
+router.get("/me", authenticate, async (req, res) => {
   try {
     const userId = req.user?.id;
 
@@ -15,52 +14,48 @@ router.get('/me', authenticate, async (req, res) => {
       where: { id: userId },
       select: {
         id: true,
+        supabaseId: true,
         email: true,
         firstName: true,
         lastName: true,
-        phoneNumber: true,
         role: true,
-        status: true,
-        emailVerified: true,
-        totpEnabled: true,
-        facilityId: true,
+        isActive: true,
+        twoFactorEnabled: true,
         createdAt: true,
         updatedAt: true,
       },
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     res.json(user);
   } catch (error) {
-    logger.error('Get user profile error:', error);
-    res.status(500).json({ error: 'Failed to get user profile' });
+    logger.error("Get user profile error:", error);
+    res.status(500).json({ error: "Failed to get user profile" });
   }
 });
 
 // Update current user profile
-router.put('/me', authenticate, async (req, res) => {
+router.put("/me", authenticate, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { firstName, lastName, phoneNumber } = req.body;
+    const { firstName, lastName } = req.body;
 
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
         ...(firstName && { firstName }),
         ...(lastName && { lastName }),
-        ...(phoneNumber && { phoneNumber }),
       },
       select: {
         id: true,
         email: true,
         firstName: true,
         lastName: true,
-        phoneNumber: true,
         role: true,
-        status: true,
+        isActive: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -68,84 +63,84 @@ router.put('/me', authenticate, async (req, res) => {
 
     res.json(updated);
   } catch (error) {
-    logger.error('Update user profile error:', error);
-    res.status(500).json({ error: 'Failed to update user profile' });
+    logger.error("Update user profile error:", error);
+    res.status(500).json({ error: "Failed to update user profile" });
   }
 });
 
 // Get user settings
-router.get('/me/settings', authenticate, async (req, res) => {
+router.get("/me/settings", authenticate, async (req, res) => {
   try {
     const userId = req.user?.id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
-        totpEnabled: true,
-        emailVerified: true,
+        twoFactorEnabled: true,
+        // Add other settings fields as needed
       },
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     res.json(user);
   } catch (error) {
-    logger.error('Get user settings error:', error);
-    res.status(500).json({ error: 'Failed to get user settings' });
+    logger.error("Get user settings error:", error);
+    res.status(500).json({ error: "Failed to get user settings" });
   }
 });
 
 // Update user settings
-router.put('/me/settings', authenticate, async (req, res) => {
+router.put("/me/settings", authenticate, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { totpEnabled } = req.body;
+    const { twoFactorEnabled } = req.body;
 
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...(typeof totpEnabled === "boolean" && { totpEnabled }),
+        ...(typeof twoFactorEnabled === "boolean" && { twoFactorEnabled }),
       },
       select: {
-        totpEnabled: true,
+        twoFactorEnabled: true,
       },
     });
 
     res.json(updated);
   } catch (error) {
-    logger.error('Update user settings error:', error);
-    res.status(500).json({ error: 'Failed to update user settings' });
+    logger.error("Update user settings error:", error);
+    res.status(500).json({ error: "Failed to update user settings" });
   }
 });
 
 // Delete user account
-router.delete('/me', authenticate, async (req, res) => {
+router.delete("/me", authenticate, async (req, res) => {
   try {
     const userId = req.user?.id;
 
     // Soft delete - mark as inactive
     await prisma.user.update({
       where: { id: userId },
-      data: { status: UserStatus.INACTIVE },
+      data: { isActive: false },
     });
 
     // Log account deletion
     await prisma.auditLog.create({
       data: {
         userId,
-        action: "ACCOUNT_DEACTIVATED",
-        entityType: "User",
-        entityId: userId,
-        metadata: { reason: "User self-deleted account" },
+        action: "DELETE",
+        resource: "user",
+        resourceId: userId,
+        details: "User account deleted",
       },
     });
 
-    res.json({ message: "Account deactivated successfully" });
+    res.json({ message: "Account deleted successfully" });
   } catch (error) {
-    logger.error('Delete user account error:', error);
-    res.status(500).json({ error: "Failed to deactivate account" });
+    logger.error("Delete user account error:", error);
+    res.status(500).json({ error: "Failed to delete account" });
   }
 });
 

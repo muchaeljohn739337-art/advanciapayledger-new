@@ -1,0 +1,21 @@
+{
+  "name": "claims-intake-worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/worker.ts",
+    "build": "tsc",
+    "start": "node dist/worker.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "@aws-sdk/client-sqs": "^3.490.0",
+    "@aws-sdk/client-eventbridge": "^3.490.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.3",
+    "@types/pg": "^8.10.9"
+  }
+}

@@ -1,0 +1,59 @@
+name: Image Build and GitOps Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Service name (e.g., api-gateway)
+        required: true
+        type: string
+      tag:
+        description: Image tag to push and deploy
+        required: true
+        type: string
+      context_path:
+        description: Docker build context path
+        required: true
+        type: string
+      dockerfile:
+        description: Path to Dockerfile
+        required: true
+        type: string
+
+jobs:
+  build-and-update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.context_path }}
+          file: ${{ inputs.dockerfile }}
+          push: true
+          tags: ghcr.io/advancia/${{ inputs.service }}:${{ inputs.tag }}
+
+      - name: Update deployment image tag in overlays
+        run: |
+          IMAGE_FILE="infra/k8s/overlays/prod/platform-core/${{ inputs.service }}/deployment.yaml"
+          echo "Updating $IMAGE_FILE to tag ${{ inputs.tag }}"
+          sed -i "s|ghcr.io/advancia/${{ inputs.service }}:{{TAG}}|ghcr.io/advancia/${{ inputs.service }}:${{ inputs.tag }}|g" "$IMAGE_FILE"
+          grep -n "image:" "$IMAGE_FILE" || true
+
+      - name: Commit and push overlay update
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(${% raw %}${{ inputs.service }}{% endraw %}): update image tag to ${{ inputs.tag }}"
+          file_pattern: "infra/k8s/overlays/prod/platform-core/${{ inputs.service }}/deployment.yaml"

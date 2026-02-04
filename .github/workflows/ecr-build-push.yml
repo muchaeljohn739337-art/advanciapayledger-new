@@ -1,0 +1,65 @@
+name: Build and Push PHI Services to ECR
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - services/phi/**
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ROLE_ARN: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: health-billing-service
+            context: services/phi/health-billing-service
+          - service: patient-link-service
+            context: services/phi/patient-link-service
+          - service: phi-docs-service
+            context: services/phi/phi-docs-service
+          - service: claims-intake-service
+            context: services/phi/claims-intake-service
+          - service: claims-intake-worker
+            context: services/phi/claims-intake-worker
+          - service: identity-service
+            context: services/phi/identity-service
+          - service: identity-worker
+            context: services/phi/identity-worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Compute ECR registry
+        id: compute
+        shell: bash
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "ACCOUNT_ID=$ACCOUNT_ID" >> $GITHUB_ENV
+          echo "REGISTRY=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com" >> $GITHUB_ENV
+
+      - name: Login to ECR
+        shell: bash
+        run: |
+          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+
+      - name: Build image
+        shell: bash
+        working-directory: ${{ matrix.context }}
+        run: |
+          docker build -t "$REGISTRY/${{ matrix.service }}:latest" .
+
+      - name: Push image
+        shell: bash
+        run: |
+          docker push "$REGISTRY/${{ matrix.service }}:latest"
