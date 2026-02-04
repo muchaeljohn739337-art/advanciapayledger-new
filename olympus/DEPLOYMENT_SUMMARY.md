@@ -21,7 +21,7 @@ chmod +x deploy_now.sh
 - ✅ Starts the service
 - ✅ Configures firewall
 
-**Time: ~2 minutes**
+### Time: ~2 minutes
 
 ---
 
@@ -55,7 +55,7 @@ chmod +x deploy_now.sh
 | **DEPLOYMENT_SUMMARY.md** | This file | Deployment summary and next steps |
 | **.gitignore**            | 65        | Git ignore patterns for security  |
 
-**Total: 1,800+ lines of production-ready code and documentation**
+### Total: 1,800+ lines of production-ready code and documentation
 
 ---
 
@@ -140,7 +140,7 @@ curl http://147.182.193.11/health
 
 Create a test issue in your repository:
 
-```
+```text
 Title: Test Issue for Olympus
 Body: This is a test issue to verify AI analysis is working correctly.
 ```
@@ -371,6 +371,7 @@ ssh root@147.182.193.11 'cd /opt/olympus && docker-compose up -d --build'
 1. **Check GitHub webhook delivery logs**
 2. **Verify URL**: `http://147.182.193.11/webhook/github`
 3. **Test manually**:
+
    ```bash
    curl -X POST http://147.182.193.11/webhook/github \
      -H "Content-Type: application/json" \
@@ -398,9 +399,9 @@ ssh root@147.182.193.11 'cd /opt/olympus && docker-compose logs | grep -i error'
 - **[README.md](README.md)** - Quick start guide
 - **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)** - Complete documentation (650+ lines)
 - **[MANUAL_DEPLOY.md](MANUAL_DEPLOY.md)** - Windows deployment guide (400+ lines)
-- **GitHub Webhook Docs**: https://docs.github.com/webhooks
-- **Anthropic API Docs**: https://docs.anthropic.com/
-- **FastAPI Docs**: https://fastapi.tiangolo.com/
+- **GitHub Webhook Docs**: [docs.github.com/webhooks](https://docs.github.com/webhooks)
+- **Anthropic API Docs**: [docs.anthropic.com](https://docs.anthropic.com/)
+- **FastAPI Docs**: [fastapi.tiangolo.com](https://fastapi.tiangolo.com/)
 
 ---
 
