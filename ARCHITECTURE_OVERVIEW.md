@@ -2,7 +2,7 @@
 
 ## 🏗️ Complete Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          IDENTITY LAYER                                  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                 │
@@ -110,6 +110,7 @@
 ## 📊 Layer-by-Layer Implementation Status
 
 ### ✅ 1. Identity Layer
+
 **Status:** Complete
 
 - **Azure Entra ID with MFA**
@@ -132,6 +133,7 @@
 ---
 
 ### ✅ 2. Network Layer
+
 **Status:** Complete
 
 - **VNet Architecture**
@@ -156,6 +158,7 @@
 ---
 
 ### ✅ 3. Compute Layer
+
 **Status:** Complete
 
 - **Hardened VMs**
@@ -183,6 +186,7 @@
 ---
 
 ### ✅ 4. Secrets Layer
+
 **Status:** Complete
 
 - **Azure Key Vault with RBAC**
@@ -209,6 +213,7 @@
 ---
 
 ### ✅ 5. CI/CD Layer
+
 **Status:** Complete
 
 - **GitHub Actions Pipeline**
@@ -227,7 +232,8 @@
   - Vulnerability scanning
 
 - **Deployment Flow**
-  ```
+
+  ```text
   Lint → Test → Build → Sandbox → Prod
   ```
 
@@ -236,6 +242,7 @@
 ---
 
 ### ✅ 6. Gateway / Ingress Layer
+
 **Status:** Complete
 
 - **NGINX Reverse Proxy**
@@ -257,13 +264,15 @@
   - IP filtering for admin endpoints
   - Request/response logging
 
-**Files:** 
+**Files:**
+
 - `infrastructure/azure/gateway-setup.bicep`
 - `infrastructure/scripts/setup-nginx.sh`
 
 ---
 
 ### ✅ 7. Recovery & Security Layer
+
 **Status:** Complete
 
 - **Backup Strategy**
@@ -286,7 +295,8 @@
   - Configuration rollback
   - Disaster recovery plan
 
-**Files:** 
+**Files:**
+
 - `infrastructure/azure/backup-setup.bicep`
 - `infrastructure/azure/killswitch-setup.bicep`
 - `infrastructure/scripts/emergency-killswitch.sh`
@@ -294,6 +304,7 @@
 ---
 
 ### ✅ 8. Monitoring Layer
+
 **Status:** Complete
 
 - **Log Analytics**
@@ -329,6 +340,7 @@
 ## 🔒 Security Principles Implemented
 
 ### Zero Trust Principles
+
 - ✅ **Never Trust, Always Verify** - All access requires authentication
 - ✅ **Least Privilege Access** - Minimal permissions for all identities
 - ✅ **Assume Breach** - Defense in depth, monitoring, kill switch
@@ -336,7 +348,8 @@
 - ✅ **Micro-segmentation** - Network isolation by security zones
 
 ### Defense in Depth
-```
+
+```text
 Layer 1: Identity (MFA, RBAC)
 Layer 2: Network (NSGs, Private Endpoints)
 Layer 3: Compute (Hardened VMs, Containers)
@@ -357,16 +370,19 @@ Layer 7: Recovery (Backups, Kill Switch)
 ## 🎯 Key Metrics
 
 ### Security Posture
+
 - **Security Score:** 95%+ (Azure Security Center)
 - **Vulnerability Count:** 0 critical, 0 high
 - **Compliance Score:** 100% (custom policies)
 
 ### Performance
+
 - **Uptime:** 99.9%+ SLA
 - **Response Time:** <200ms (p95)
 - **Error Rate:** <1% (p95)
 
 ### Operational
+
 - **Deployment Time:** 30-45 minutes
 - **Recovery Time:** <15 minutes (kill switch)
 - **Backup Frequency:** Daily (VMs), Weekly (configs)
