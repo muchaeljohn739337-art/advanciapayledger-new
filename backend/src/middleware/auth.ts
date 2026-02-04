@@ -112,3 +112,6 @@ export const requireRole = (roles: string[]) => {
 
 // Alias for consistency
 export const authenticate = authenticateToken;
+
+// Additional alias for compatibility with other modules
+export const authMiddleware = authenticateToken;

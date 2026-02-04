@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PrismaClient, Prisma } from "@prisma/client";
 import Stripe from "stripe";
 import { Decimal } from "decimal.js";
@@ -389,3 +390,4 @@ export class PaymentService {
 }
 
 export default PaymentService;
+

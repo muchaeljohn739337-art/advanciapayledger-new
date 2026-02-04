@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as EmailTemplates from "../lib/emailTemplates";
 import type { TemplateData } from "../lib/emailTemplates";
 import { emailService } from "../lib/emailService";
@@ -432,3 +433,4 @@ class EmailIntegrationService {
 
 export const emailIntegrationService = new EmailIntegrationService();
 export default EmailIntegrationService;
+

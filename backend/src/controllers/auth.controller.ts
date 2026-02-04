@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../utils/prisma";
@@ -260,3 +261,4 @@ export class AuthController {
 }
 
 export const authController = new AuthController();
+

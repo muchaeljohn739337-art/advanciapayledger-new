@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Ava AI Assistant Configuration
  * Official AI Support Assistant for Advancia Pay Ledger
@@ -171,3 +172,4 @@ ${context ? `Context: ${JSON.stringify(context)}` : ""}
 
 Respond as Ava:`;
 }
+

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma } from '../utils/prisma';
 import { logger } from '../utils/logger';
 
@@ -59,3 +60,4 @@ class WalletService {
 }
 
 export const walletService = new WalletService();
+

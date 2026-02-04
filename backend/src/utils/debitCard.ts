@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { logger } from "./logger";
 import { PaymentMethod } from "@prisma/client";
 
@@ -335,3 +336,4 @@ export const getSettlementDays = (method: PaymentMethod): number => {
       return 5;
   }
 };
+

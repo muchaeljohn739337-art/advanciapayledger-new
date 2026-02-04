@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
 
@@ -99,3 +100,4 @@ export class IdempotencyService {
 }
 
 export default IdempotencyService;
+

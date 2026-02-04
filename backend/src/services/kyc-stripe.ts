@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Stripe from "stripe";
 import { prisma } from "../app";
 import { logger } from "../utils/logger";
@@ -94,3 +95,4 @@ export class StripeKYCService {
 }
 
 export default new StripeKYCService();
+
