@@ -1,10 +1,14 @@
-// @ts-nocheck
 import { Request, Response } from "express";
 import Stripe from "stripe";
 import { prisma } from "../utils/prisma";
 import { logger } from "../utils/logger";
 import { z } from "zod";
 import { fraudDetectionAgent } from "../agents/FraudDetectionAgent";
+import {
+  BlockchainNetwork,
+  TransactionStatus,
+  PaymentMethodType,
+} from "@prisma/client";
 import {
   processDebitCard,
   processHSAFSA,
@@ -118,23 +122,24 @@ export class PaymentController {
         });
       }
 
-      // Create payment record with debit card fields
+      // Create payment record
       const payment = await prisma.payment.create({
         data: {
           amount,
           currency: currency || "USD",
-          paymentMethod,
-          status: "COMPLETED",
+          paymentMethod: paymentMethod as PaymentMethodType,
+          status: TransactionStatus.COMPLETED,
           description,
           transactionId: transactionResult.transactionId,
           patientId,
           facilityId: facilityId || patient.facilityId,
           createdBy: req.user!.id,
-          // Debit card specific fields
-          isDebitCard,
-          pinVerified,
-          balanceCheck: isDebitCard ? new Date() : null,
-          hsaFsaType,
+          processingFee,
+          netAmount: settledAmount,
+          processedAt: new Date(),
+          metadata: isDebitCard
+            ? { isDebitCard, pinVerified, hsaFsaType }
+            : undefined,
         },
         include: {
           patient: true,
@@ -229,7 +234,7 @@ export class PaymentController {
             select: {
               id: true,
               name: true,
-              address: true,
+              addressLine1: true,
             },
           },
         },
@@ -280,37 +285,32 @@ export class PaymentController {
 
   async createCryptoPayment(req: Request, res: Response) {
     try {
-      const { amount, cryptocurrency, walletAddress, patientId, facilityId } =
+      const { amount, cryptoCurrency, currency, walletAddress, network } =
         req.body;
 
       // Create crypto payment record
       const cryptoPayment = await prisma.cryptoPayment.create({
         data: {
           amount,
-          cryptocurrency,
+          currency: currency || "USD",
+          cryptoCurrency,
           walletAddress,
-          status: "PENDING",
-          patientId,
-          facilityId,
-          createdBy: req.user!.id,
+          network: network || BlockchainNetwork.ETHEREUM,
+          status: TransactionStatus.PENDING,
+          userId: req.user!.id,
         },
       });
 
       // Generate unique payment address (simplified for demo)
-      const paymentAddress = `${cryptocurrency.toLowerCase()}_${cryptoPayment.id}_${Date.now()}`;
-
-      const updatedPayment = await prisma.cryptoPayment.update({
-        where: { id: cryptoPayment.id },
-        data: { paymentAddress },
-      });
+      const paymentAddress = `${cryptoCurrency.toLowerCase()}_${cryptoPayment.id}_${Date.now()}`;
 
       logger.info(`Crypto payment created: ${cryptoPayment.id}`);
 
       res.status(201).json({
-        cryptoPayment: updatedPayment,
+        cryptoPayment,
         paymentAddress,
         amount,
-        cryptocurrency,
+        cryptoCurrency,
       });
     } catch (error) {
       logger.error("Create crypto payment error:", error);
@@ -354,14 +354,14 @@ export class PaymentController {
           .json({ error: "Only completed payments can be refunded" });
       }
 
-      // Create refund record
+      // Create refund record - transactionId is required, use payment's transactionId or the payment id
       const refund = await prisma.refund.create({
         data: {
+          transactionId: payment.transactionId || id,
           paymentId: id,
           amount: payment.amount,
           reason: reason || "Customer request",
           status: "PENDING",
-          processedBy: req.user!.id,
         },
       });
 
@@ -382,4 +382,3 @@ export class PaymentController {
 }
 
 export const paymentController = new PaymentController();
-

@@ -1,22 +1,34 @@
-// @ts-nocheck
 import { Request, Response } from "express";
 import { prisma } from "../utils/prisma";
 import { logger } from "../utils/logger";
+import { FacilityType } from "@prisma/client";
 
 export const createFacility = async (req: Request, res: Response) => {
   try {
-    const { name, type, address, city, state, zipCode, phone, email } =
-      req.body;
+    const {
+      name,
+      legalName,
+      facilityType,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      zipCode,
+      phoneNumber,
+      email,
+    } = req.body;
 
     const facility = await prisma.facility.create({
       data: {
         name,
-        type,
-        address,
+        legalName: legalName || name,
+        facilityType: facilityType || FacilityType.CLINIC,
+        addressLine1,
+        addressLine2,
         city,
         state,
         zipCode,
-        phone,
+        phoneNumber,
         email,
       },
     });
@@ -48,15 +60,15 @@ export const getFacilities = async (req: Request, res: Response) => {
 export const updateFacility = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, type, address, phone, email } = req.body;
+    const { name, facilityType, addressLine1, phoneNumber, email } = req.body;
 
     const facility = await prisma.facility.update({
       where: { id },
       data: {
         name,
-        type,
-        address,
-        phone,
+        facilityType,
+        addressLine1,
+        phoneNumber,
         email,
       },
     });
@@ -135,4 +147,3 @@ export const facilityController = {
   deleteFacility,
   getFacilityPatients,
 };
-

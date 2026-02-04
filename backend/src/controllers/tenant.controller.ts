@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { logger } from "../utils/logger";
@@ -213,19 +212,7 @@ export class TenantController {
 
       const users = await prisma.tenantUser.findMany({
         where: { tenantId: req.tenant.id },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              role: true,
-              status: true,
-            },
-          },
-        },
-        orderBy: { joinedAt: "desc" },
+        orderBy: { createdAt: "desc" },
       });
 
       res.json({
@@ -288,18 +275,6 @@ export class TenantController {
           userId,
           role,
         },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              role: true,
-              status: true,
-            },
-          },
-        },
       });
 
       logger.info(`User added to tenant: ${userId} -> ${req.tenant.id}`);
@@ -337,18 +312,6 @@ export class TenantController {
           },
         },
         data: { role },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              role: true,
-              status: true,
-            },
-          },
-        },
       });
 
       logger.info(`Tenant user role updated: ${userId} -> ${role}`);
@@ -416,7 +379,7 @@ export class TenantController {
           updatedAt: true,
           _count: {
             select: {
-              users: true,
+              tenantUsers: true,
             },
           },
         },
@@ -444,20 +407,7 @@ export class TenantController {
       const tenant = await prisma.tenant.findUnique({
         where: { id: tenantId },
         include: {
-          users: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  email: true,
-                  firstName: true,
-                  lastName: true,
-                  role: true,
-                  status: true,
-                },
-              },
-            },
-          },
+          tenantUsers: true,
         },
       });
 
@@ -483,4 +433,3 @@ export class TenantController {
 }
 
 export const tenantController = new TenantController();
-

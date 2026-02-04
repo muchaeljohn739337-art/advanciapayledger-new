@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../utils/prisma";
@@ -52,7 +51,13 @@ export class AuthController {
       );
 
       await emailIntegrationService.sendVerificationEmail(
-        user,
+        {
+          id: user.id,
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
         verificationToken,
       );
 
@@ -261,4 +266,3 @@ export class AuthController {
 }
 
 export const authController = new AuthController();
-

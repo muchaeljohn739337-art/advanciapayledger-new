@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Crypto Payment Controller
  * Handles cryptocurrency payment processing for Advancia PayLedger
@@ -6,7 +5,7 @@
 
 import { Request, Response } from "express";
 import { web3Service, SUPPORTED_TOKENS } from "../services/web3Service";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, BlockchainNetwork } from "@prisma/client";
 import { logger } from "../utils/logger";
 
 const prisma = new PrismaClient();
@@ -51,12 +50,12 @@ export const createPaymentRequest = async (req: Request, res: Response) => {
     const paymentRequest = await prisma.cryptoPayment.create({
       data: {
         amount: amount.toString(),
-        cryptocurrency: currency,
+        cryptoCurrency: currency,
+        currency: "USD",
         walletAddress: recipientAddress,
         status: "PENDING",
-        patientId: req.user?.id || "",
-        facilityId: "",
-        createdBy: req.user?.id || "",
+        userId: req.user?.id || "",
+        network: BlockchainNetwork.ETHEREUM,
       },
     });
 
@@ -119,7 +118,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
     const isValid = await web3Service.verifyPayment(
       txHash,
       payment.amount.toString(),
-      payment.cryptocurrency,
+      payment.cryptoCurrency,
       payment.walletAddress,
     );
 
@@ -390,4 +389,3 @@ export const getConnectionStatus = async (req: Request, res: Response) => {
     }
   }
 };
-
