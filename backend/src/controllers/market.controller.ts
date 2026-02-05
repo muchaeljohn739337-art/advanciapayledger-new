@@ -15,7 +15,7 @@ export const getMarketSummary = async (req: Request, res: Response) => {
 export const getStockQuotes = async (req: Request, res: Response) => {
   try {
     const { symbols } = req.query;
-    
+
     if (!symbols || typeof symbols !== "string") {
       return res.status(400).json({ error: "Symbols parameter is required" });
     }
@@ -32,7 +32,7 @@ export const getStockQuotes = async (req: Request, res: Response) => {
 export const getCryptoQuotes = async (req: Request, res: Response) => {
   try {
     const { symbols } = req.query;
-    
+
     if (!symbols || typeof symbols !== "string") {
       return res.status(400).json({ error: "Symbols parameter is required" });
     }
@@ -49,7 +49,7 @@ export const getCryptoQuotes = async (req: Request, res: Response) => {
 export const getForexRates = async (req: Request, res: Response) => {
   try {
     const { pairs } = req.query;
-    
+
     if (!pairs || typeof pairs !== "string") {
       return res.status(400).json({ error: "Pairs parameter is required" });
     }
@@ -66,26 +66,30 @@ export const getForexRates = async (req: Request, res: Response) => {
 export const getHistoricalData = async (req: Request, res: Response) => {
   try {
     const { symbol, type, period } = req.query;
-    
+
     if (!symbol || typeof symbol !== "string") {
       return res.status(400).json({ error: "Symbol parameter is required" });
     }
 
     if (!type || !["stock", "crypto", "forex"].includes(type as string)) {
-      return res.status(400).json({ error: "Valid type parameter is required (stock, crypto, forex)" });
+      return res
+        .status(400)
+        .json({
+          error: "Valid type parameter is required (stock, crypto, forex)",
+        });
     }
 
     const validPeriods = ["1D", "1W", "1M", "3M", "1Y", "5Y"];
-    const selectedPeriod = validPeriods.includes(period as string) 
-      ? (period as "1D" | "1W" | "1M" | "3M" | "1Y" | "5Y") 
+    const selectedPeriod = validPeriods.includes(period as string)
+      ? (period as "1D" | "1W" | "1M" | "3M" | "1Y" | "5Y")
       : "1M";
 
     const data = await marketService.getHistoricalData(
       symbol.toUpperCase(),
       type as "stock" | "crypto" | "forex",
-      selectedPeriod
+      selectedPeriod,
     );
-    
+
     res.json(data);
   } catch (error) {
     logger.error("Error fetching historical data:", error);
@@ -117,13 +121,13 @@ export const getWatchlist = async (req: Request, res: Response) => {
 export const searchSymbol = async (req: Request, res: Response) => {
   try {
     const { query } = req.query;
-    
+
     if (!query || typeof query !== "string") {
       return res.status(400).json({ error: "Query parameter is required" });
     }
 
     const searchTerm = query.toUpperCase();
-    
+
     // Mock search results - replace with real API in production
     const allSymbols = [
       { symbol: "AAPL", name: "Apple Inc.", type: "stock" },
@@ -144,7 +148,9 @@ export const searchSymbol = async (req: Request, res: Response) => {
     ];
 
     const results = allSymbols.filter(
-      (s) => s.symbol.includes(searchTerm) || s.name.toUpperCase().includes(searchTerm)
+      (s) =>
+        s.symbol.includes(searchTerm) ||
+        s.name.toUpperCase().includes(searchTerm),
     );
 
     res.json(results);

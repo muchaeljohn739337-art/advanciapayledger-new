@@ -108,7 +108,9 @@ export async function getStockQuotes(symbols: string[]): Promise<StockQuote[]> {
   }
 }
 
-export async function getCryptoQuotes(symbols: string[]): Promise<CryptoQuote[]> {
+export async function getCryptoQuotes(
+  symbols: string[],
+): Promise<CryptoQuote[]> {
   const cacheKey = `crypto:${symbols.join(",")}`;
   const cached = getCachedData<CryptoQuote[]>(cacheKey);
   if (cached) return cached;
@@ -176,12 +178,43 @@ export async function getMarketSummary(): Promise<MarketSummary> {
 
   try {
     const [stocks, crypto, forex] = await Promise.all([
-      getStockQuotes(["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "META", "NVDA", "JPM", "V", "JNJ"]),
-      getCryptoQuotes(["BTC", "ETH", "BNB", "XRP", "SOL", "ADA", "DOGE", "DOT", "MATIC", "AVAX"]),
-      getForexRates(["EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD"]),
+      getStockQuotes([
+        "AAPL",
+        "GOOGL",
+        "MSFT",
+        "AMZN",
+        "TSLA",
+        "META",
+        "NVDA",
+        "JPM",
+        "V",
+        "JNJ",
+      ]),
+      getCryptoQuotes([
+        "BTC",
+        "ETH",
+        "BNB",
+        "XRP",
+        "SOL",
+        "ADA",
+        "DOGE",
+        "DOT",
+        "MATIC",
+        "AVAX",
+      ]),
+      getForexRates([
+        "EUR/USD",
+        "GBP/USD",
+        "USD/JPY",
+        "USD/CHF",
+        "AUD/USD",
+        "USD/CAD",
+      ]),
     ]);
 
-    const sortedByChange = [...stocks].sort((a, b) => b.changePercent - a.changePercent);
+    const sortedByChange = [...stocks].sort(
+      (a, b) => b.changePercent - a.changePercent,
+    );
     const sortedByVolume = [...stocks].sort((a, b) => b.volume - a.volume);
 
     const summary: MarketSummary = {
@@ -192,16 +225,38 @@ export async function getMarketSummary(): Promise<MarketSummary> {
       },
       crypto: {
         topCoins: crypto.slice(0, 5),
-        trending: [...crypto].sort((a, b) => b.changePercent24h - a.changePercent24h).slice(0, 5),
+        trending: [...crypto]
+          .sort((a, b) => b.changePercent24h - a.changePercent24h)
+          .slice(0, 5),
       },
       forex: {
         majorPairs: forex,
       },
       indices: [
-        { name: "S&P 500", value: 5234.18 + Math.random() * 50, change: generateRandomChange(), changePercent: generateRandomChangePercent() / 5 },
-        { name: "Dow Jones", value: 42156.97 + Math.random() * 200, change: generateRandomChange() * 10, changePercent: generateRandomChangePercent() / 5 },
-        { name: "NASDAQ", value: 16742.39 + Math.random() * 100, change: generateRandomChange() * 5, changePercent: generateRandomChangePercent() / 5 },
-        { name: "Russell 2000", value: 2089.45 + Math.random() * 20, change: generateRandomChange(), changePercent: generateRandomChangePercent() / 5 },
+        {
+          name: "S&P 500",
+          value: 5234.18 + Math.random() * 50,
+          change: generateRandomChange(),
+          changePercent: generateRandomChangePercent() / 5,
+        },
+        {
+          name: "Dow Jones",
+          value: 42156.97 + Math.random() * 200,
+          change: generateRandomChange() * 10,
+          changePercent: generateRandomChangePercent() / 5,
+        },
+        {
+          name: "NASDAQ",
+          value: 16742.39 + Math.random() * 100,
+          change: generateRandomChange() * 5,
+          changePercent: generateRandomChangePercent() / 5,
+        },
+        {
+          name: "Russell 2000",
+          value: 2089.45 + Math.random() * 20,
+          change: generateRandomChange(),
+          changePercent: generateRandomChangePercent() / 5,
+        },
       ],
       lastUpdated: new Date(),
     };
@@ -217,8 +272,17 @@ export async function getMarketSummary(): Promise<MarketSummary> {
 export async function getHistoricalData(
   symbol: string,
   type: "stock" | "crypto" | "forex",
-  period: "1D" | "1W" | "1M" | "3M" | "1Y" | "5Y" = "1M"
-): Promise<{ date: string; open: number; high: number; low: number; close: number; volume?: number }[]> {
+  period: "1D" | "1W" | "1M" | "3M" | "1Y" | "5Y" = "1M",
+): Promise<
+  {
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume?: number;
+  }[]
+> {
   const cacheKey = `historical:${type}:${symbol}:${period}`;
   const cached = getCachedData<any[]>(cacheKey);
   if (cached) return cached;
@@ -235,19 +299,24 @@ export async function getHistoricalData(
     };
 
     const dataPoints = periods[period];
-    const basePrice = type === "crypto" ? generateCryptoPrice(symbol) : generateRandomPrice(symbol);
+    const basePrice =
+      type === "crypto"
+        ? generateCryptoPrice(symbol)
+        : generateRandomPrice(symbol);
     const data = [];
 
     for (let i = dataPoints; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      
+
       const volatility = 0.02;
       const change = (Math.random() - 0.5) * 2 * volatility;
-      const open = basePrice * (1 + change * (dataPoints - i) / dataPoints);
+      const open = basePrice * (1 + (change * (dataPoints - i)) / dataPoints);
       const close = open * (1 + (Math.random() - 0.5) * volatility);
-      const high = Math.max(open, close) * (1 + Math.random() * volatility / 2);
-      const low = Math.min(open, close) * (1 - Math.random() * volatility / 2);
+      const high =
+        Math.max(open, close) * (1 + (Math.random() * volatility) / 2);
+      const low =
+        Math.min(open, close) * (1 - (Math.random() * volatility) / 2);
 
       data.push({
         date: date.toISOString().split("T")[0],
@@ -255,7 +324,10 @@ export async function getHistoricalData(
         high: parseFloat(high.toFixed(2)),
         low: parseFloat(low.toFixed(2)),
         close: parseFloat(close.toFixed(2)),
-        volume: type !== "forex" ? Math.floor(Math.random() * 10000000) + 1000000 : undefined,
+        volume:
+          type !== "forex"
+            ? Math.floor(Math.random() * 10000000) + 1000000
+            : undefined,
       });
     }
 
@@ -331,13 +403,17 @@ function generateCryptoPrice(symbol: string): number {
     AVAX: 38.5,
   };
   const base = basePrices[symbol] || 100;
-  return parseFloat((base + (Math.random() - 0.5) * base * 0.05).toFixed(symbol === "BTC" ? 2 : symbol === "ETH" ? 2 : 4));
+  return parseFloat(
+    (base + (Math.random() - 0.5) * base * 0.05).toFixed(
+      symbol === "BTC" ? 2 : symbol === "ETH" ? 2 : 4,
+    ),
+  );
 }
 
 function generateForexRate(pair: string): number {
   const rates: Record<string, number> = {
     "EUR/USD": 1.0825,
-    "GBP/USD": 1.2650,
+    "GBP/USD": 1.265,
     "USD/JPY": 148.75,
     "USD/CHF": 0.8825,
     "AUD/USD": 0.6545,

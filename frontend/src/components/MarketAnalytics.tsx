@@ -17,7 +17,10 @@ import {
   Bitcoin,
   Globe,
   BarChart3,
+  LineChart as LineChartIcon,
 } from "lucide-react";
+import PriceChart from "./PriceChart";
+import AssetDetailModal from "./AssetDetailModal";
 
 interface StockQuote {
   symbol: string;
@@ -74,12 +77,29 @@ interface MarketSummary {
 
 type TabType = "overview" | "stocks" | "crypto" | "forex";
 
+interface SelectedAsset {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  type: "stock" | "crypto" | "forex";
+  volume?: number;
+  marketCap?: number;
+  high52Week?: number;
+  low52Week?: number;
+}
+
 export default function MarketAnalytics() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [marketData, setMarketData] = useState<MarketSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<SelectedAsset | null>(
+    null,
+  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchMarketData = async () => {
     setLoading(true);
@@ -90,9 +110,9 @@ export default function MarketAnalytics() {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      
+
       if (!response.ok) throw new Error("Failed to fetch market data");
-      
+
       const data = await response.json();
       setMarketData(data);
     } catch (err) {
@@ -110,6 +130,16 @@ export default function MarketAnalytics() {
     return () => clearInterval(interval);
   }, []);
 
+  const openAssetDetail = (asset: SelectedAsset) => {
+    setSelectedAsset(asset);
+    setIsModalOpen(true);
+  };
+
+  const closeAssetDetail = () => {
+    setIsModalOpen(false);
+    setSelectedAsset(null);
+  };
+
   const formatCurrency = (value: number, decimals = 2) => {
     if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
     if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
@@ -124,49 +154,112 @@ export default function MarketAnalytics() {
     return value.toString();
   };
 
-  const PriceChange = ({ change, percent }: { change: number; percent: number }) => {
+  const PriceChange = ({
+    change,
+    percent,
+  }: {
+    change: number;
+    percent: number;
+  }) => {
     const isPositive = change >= 0;
     return (
-      <div className={`flex items-center gap-1 ${isPositive ? "text-green-600" : "text-red-600"}`}>
-        {isPositive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+      <div
+        className={`flex items-center gap-1 ${isPositive ? "text-green-600" : "text-red-600"}`}
+      >
+        {isPositive ? (
+          <ArrowUpRight className="h-4 w-4" />
+        ) : (
+          <ArrowDownRight className="h-4 w-4" />
+        )}
         <span className="font-medium">
-          {isPositive ? "+" : ""}{change.toFixed(2)} ({isPositive ? "+" : ""}{percent.toFixed(2)}%)
+          {isPositive ? "+" : ""}
+          {change.toFixed(2)} ({isPositive ? "+" : ""}
+          {percent.toFixed(2)}%)
         </span>
       </div>
     );
   };
 
-  const QuoteCard = ({ 
-    symbol, 
-    name, 
-    price, 
-    change, 
+  const QuoteCard = ({
+    symbol,
+    name,
+    price,
+    change,
     changePercent,
     icon: Icon,
-  }: { 
-    symbol: string; 
-    name: string; 
-    price: number; 
-    change: number; 
+    assetType,
+    volume,
+    marketCap,
+  }: {
+    symbol: string;
+    name: string;
+    price: number;
+    change: number;
     changePercent: number;
     icon: React.ElementType;
+    assetType: "stock" | "crypto" | "forex";
+    volume?: number;
+    marketCap?: number;
   }) => (
-    <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+    <Card 
+      className="hover:shadow-lg transition-shadow cursor-pointer group"
+      onClick={() => openAssetDetail({
+        symbol,
+        name,
+        price,
+        change,
+        changePercent,
+        type: assetType,
+        volume,
+        marketCap,
+      })}
+    >
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-2">
             <Icon className="h-5 w-5 text-gray-500" />
             <div>
               <span className="font-bold text-lg">{symbol}</span>
-              <p className="text-xs text-gray-500 truncate max-w-[120px]">{name}</p>
+              <p className="text-xs text-gray-500 truncate max-w-[120px]">
+                {name}
+              </p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <Star className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                openAssetDetail({
+                  symbol,
+                  name,
+                  price,
+                  change,
+                  changePercent,
+                  type: assetType,
+                  volume,
+                  marketCap,
+                });
+              }}
+            >
+              <LineChartIcon className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Star className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <div className="mt-2">
-          <p className="text-2xl font-bold">{formatCurrency(price, price < 1 ? 4 : 2)}</p>
+          <p className="text-2xl font-bold">
+            {formatCurrency(price, price < 1 ? 4 : 2)}
+          </p>
           <PriceChange change={change} percent={changePercent} />
         </div>
       </CardContent>
@@ -176,8 +269,12 @@ export default function MarketAnalytics() {
   const IndexCard = ({ index }: { index: MarketIndex }) => (
     <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <CardContent className="p-4">
-        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{index.name}</p>
-        <p className="text-xl font-bold mt-1">{index.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          {index.name}
+        </p>
+        <p className="text-xl font-bold mt-1">
+          {index.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+        </p>
         <PriceChange change={index.change} percent={index.changePercent} />
       </CardContent>
     </Card>
@@ -207,7 +304,10 @@ export default function MarketAnalytics() {
         <div>
           <h1 className="text-3xl font-bold">Market Analytics</h1>
           <p className="text-gray-500">
-            Last updated: {marketData?.lastUpdated ? new Date(marketData.lastUpdated).toLocaleString() : "N/A"}
+            Last updated:{" "}
+            {marketData?.lastUpdated
+              ? new Date(marketData.lastUpdated).toLocaleString()
+              : "N/A"}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -220,7 +320,12 @@ export default function MarketAnalytics() {
               className="pl-10 w-64"
             />
           </div>
-          <Button onClick={fetchMarketData} variant="outline" size="icon" disabled={loading}>
+          <Button
+            onClick={fetchMarketData}
+            variant="outline"
+            size="icon"
+            disabled={loading}
+          >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -255,6 +360,26 @@ export default function MarketAnalytics() {
             ))}
           </div>
 
+          {/* Featured Charts */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <PriceChart
+              symbol="BTC"
+              type="crypto"
+              name="Bitcoin"
+              currentPrice={marketData.crypto.topCoins.find(c => c.symbol === "BTC")?.price}
+              change={marketData.crypto.topCoins.find(c => c.symbol === "BTC")?.change24h}
+              changePercent={marketData.crypto.topCoins.find(c => c.symbol === "BTC")?.changePercent24h}
+            />
+            <PriceChart
+              symbol="AAPL"
+              type="stock"
+              name="Apple Inc."
+              currentPrice={marketData.stocks.gainers.find(s => s.symbol === "AAPL")?.price || marketData.stocks.losers.find(s => s.symbol === "AAPL")?.price}
+              change={marketData.stocks.gainers.find(s => s.symbol === "AAPL")?.change || marketData.stocks.losers.find(s => s.symbol === "AAPL")?.change}
+              changePercent={marketData.stocks.gainers.find(s => s.symbol === "AAPL")?.changePercent || marketData.stocks.losers.find(s => s.symbol === "AAPL")?.changePercent}
+            />
+          </div>
+
           {/* Top Gainers & Losers */}
           <div className="grid md:grid-cols-2 gap-6">
             <Card>
@@ -267,13 +392,20 @@ export default function MarketAnalytics() {
               <CardContent>
                 <div className="space-y-3">
                   {marketData.stocks.gainers.slice(0, 5).map((stock) => (
-                    <div key={stock.symbol} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+                    <div
+                      key={stock.symbol}
+                      className="flex justify-between items-center p-2 hover:bg-gray-50 rounded"
+                    >
                       <div>
                         <span className="font-bold">{stock.symbol}</span>
-                        <span className="text-gray-500 text-sm ml-2">{stock.name}</span>
+                        <span className="text-gray-500 text-sm ml-2">
+                          {stock.name}
+                        </span>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{formatCurrency(stock.price)}</p>
+                        <p className="font-medium">
+                          {formatCurrency(stock.price)}
+                        </p>
                         <Badge className="bg-green-100 text-green-700">
                           +{stock.changePercent.toFixed(2)}%
                         </Badge>
@@ -294,13 +426,20 @@ export default function MarketAnalytics() {
               <CardContent>
                 <div className="space-y-3">
                   {marketData.stocks.losers.slice(0, 5).map((stock) => (
-                    <div key={stock.symbol} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+                    <div
+                      key={stock.symbol}
+                      className="flex justify-between items-center p-2 hover:bg-gray-50 rounded"
+                    >
                       <div>
                         <span className="font-bold">{stock.symbol}</span>
-                        <span className="text-gray-500 text-sm ml-2">{stock.name}</span>
+                        <span className="text-gray-500 text-sm ml-2">
+                          {stock.name}
+                        </span>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{formatCurrency(stock.price)}</p>
+                        <p className="font-medium">
+                          {formatCurrency(stock.price)}
+                        </p>
                         <Badge className="bg-red-100 text-red-700">
                           {stock.changePercent.toFixed(2)}%
                         </Badge>
@@ -331,6 +470,9 @@ export default function MarketAnalytics() {
                     change={coin.change24h}
                     changePercent={coin.changePercent24h}
                     icon={Bitcoin}
+                    assetType="crypto"
+                    volume={coin.volume24h}
+                    marketCap={coin.marketCap}
                   />
                 ))}
               </div>
@@ -348,13 +490,21 @@ export default function MarketAnalytics() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {marketData.forex.majorPairs.map((pair) => (
-                  <Card key={pair.pair} className="hover:shadow-md transition-shadow">
+                  <Card
+                    key={pair.pair}
+                    className="hover:shadow-md transition-shadow"
+                  >
                     <CardContent className="p-4">
                       <div className="flex justify-between items-center">
                         <span className="font-bold text-lg">{pair.pair}</span>
-                        <PriceChange change={pair.change} percent={pair.changePercent} />
+                        <PriceChange
+                          change={pair.change}
+                          percent={pair.changePercent}
+                        />
                       </div>
-                      <p className="text-2xl font-bold mt-2">{pair.rate.toFixed(4)}</p>
+                      <p className="text-2xl font-bold mt-2">
+                        {pair.rate.toFixed(4)}
+                      </p>
                       <div className="flex justify-between text-sm text-gray-500 mt-1">
                         <span>Bid: {pair.bid?.toFixed(4) || "-"}</span>
                         <span>Ask: {pair.ask?.toFixed(4) || "-"}</span>
@@ -371,17 +521,22 @@ export default function MarketAnalytics() {
       {/* Stocks Tab */}
       {activeTab === "stocks" && marketData && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {[...marketData.stocks.gainers, ...marketData.stocks.losers].map((stock) => (
-            <QuoteCard
-              key={stock.symbol}
-              symbol={stock.symbol}
-              name={stock.name}
-              price={stock.price}
-              change={stock.change}
-              changePercent={stock.changePercent}
-              icon={DollarSign}
-            />
-          ))}
+          {[...marketData.stocks.gainers, ...marketData.stocks.losers].map(
+            (stock) => (
+              <QuoteCard
+                key={stock.symbol}
+                symbol={stock.symbol}
+                name={stock.name}
+                price={stock.price}
+                change={stock.change}
+                changePercent={stock.changePercent}
+                icon={DollarSign}
+                assetType="stock"
+                volume={stock.volume}
+                marketCap={stock.marketCap}
+              />
+            ),
+          )}
         </div>
       )}
 
@@ -397,6 +552,9 @@ export default function MarketAnalytics() {
               change={coin.change24h}
               changePercent={coin.changePercent24h}
               icon={Bitcoin}
+              assetType="crypto"
+              volume={coin.volume24h}
+              marketCap={coin.marketCap}
             />
           ))}
         </div>
@@ -418,7 +576,10 @@ export default function MarketAnalytics() {
                   <Globe className="h-6 w-6 text-blue-500" />
                 </div>
                 <p className="text-3xl font-bold">{pair.rate.toFixed(4)}</p>
-                <PriceChange change={pair.change} percent={pair.changePercent} />
+                <PriceChange
+                  change={pair.change}
+                  percent={pair.changePercent}
+                />
                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
                   <div>
                     <p className="text-sm text-gray-500">Bid</p>
@@ -434,6 +595,13 @@ export default function MarketAnalytics() {
           ))}
         </div>
       )}
+
+      {/* Asset Detail Modal */}
+      <AssetDetailModal
+        isOpen={isModalOpen}
+        onClose={closeAssetDetail}
+        asset={selectedAsset}
+      />
     </div>
   );
 }
