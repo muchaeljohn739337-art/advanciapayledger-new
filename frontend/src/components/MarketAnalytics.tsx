@@ -201,18 +201,20 @@ export default function MarketAnalytics() {
     volume?: number;
     marketCap?: number;
   }) => (
-    <Card 
+    <Card
       className="hover:shadow-lg transition-shadow cursor-pointer group"
-      onClick={() => openAssetDetail({
-        symbol,
-        name,
-        price,
-        change,
-        changePercent,
-        type: assetType,
-        volume,
-        marketCap,
-      })}
+      onClick={() =>
+        openAssetDetail({
+          symbol,
+          name,
+          price,
+          change,
+          changePercent,
+          type: assetType,
+          volume,
+          marketCap,
+        })
+      }
     >
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
@@ -226,9 +228,9 @@ export default function MarketAnalytics() {
             </div>
           </div>
           <div className="flex gap-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation();
@@ -246,9 +248,9 @@ export default function MarketAnalytics() {
             >
               <LineChartIcon className="h-4 w-4" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-8 w-8 p-0"
               onClick={(e) => e.stopPropagation()}
             >
@@ -366,17 +368,40 @@ export default function MarketAnalytics() {
               symbol="BTC"
               type="crypto"
               name="Bitcoin"
-              currentPrice={marketData.crypto.topCoins.find(c => c.symbol === "BTC")?.price}
-              change={marketData.crypto.topCoins.find(c => c.symbol === "BTC")?.change24h}
-              changePercent={marketData.crypto.topCoins.find(c => c.symbol === "BTC")?.changePercent24h}
+              currentPrice={
+                marketData.crypto.topCoins.find((c) => c.symbol === "BTC")
+                  ?.price
+              }
+              change={
+                marketData.crypto.topCoins.find((c) => c.symbol === "BTC")
+                  ?.change24h
+              }
+              changePercent={
+                marketData.crypto.topCoins.find((c) => c.symbol === "BTC")
+                  ?.changePercent24h
+              }
             />
             <PriceChart
               symbol="AAPL"
               type="stock"
               name="Apple Inc."
-              currentPrice={marketData.stocks.gainers.find(s => s.symbol === "AAPL")?.price || marketData.stocks.losers.find(s => s.symbol === "AAPL")?.price}
-              change={marketData.stocks.gainers.find(s => s.symbol === "AAPL")?.change || marketData.stocks.losers.find(s => s.symbol === "AAPL")?.change}
-              changePercent={marketData.stocks.gainers.find(s => s.symbol === "AAPL")?.changePercent || marketData.stocks.losers.find(s => s.symbol === "AAPL")?.changePercent}
+              currentPrice={
+                marketData.stocks.gainers.find((s) => s.symbol === "AAPL")
+                  ?.price ||
+                marketData.stocks.losers.find((s) => s.symbol === "AAPL")?.price
+              }
+              change={
+                marketData.stocks.gainers.find((s) => s.symbol === "AAPL")
+                  ?.change ||
+                marketData.stocks.losers.find((s) => s.symbol === "AAPL")
+                  ?.change
+              }
+              changePercent={
+                marketData.stocks.gainers.find((s) => s.symbol === "AAPL")
+                  ?.changePercent ||
+                marketData.stocks.losers.find((s) => s.symbol === "AAPL")
+                  ?.changePercent
+              }
             />
           </div>
 

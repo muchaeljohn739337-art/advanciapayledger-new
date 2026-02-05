@@ -958,3 +958,110 @@ model Alert {
   @@index([createdAt])
   @@map("alerts")
 }
+
+// --- Portfolio & Holdings ---
+model Portfolio {
+  id                String            @id @default(uuid())
+  userId            String
+  name              String            @default("Main Portfolio")
+  description       String?
+  isDefault         Boolean           @default(false)
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  holdings          Holding[]
+  transactions      PortfolioTransaction[]
+  snapshots         PortfolioSnapshot[]
+  
+  @@index([userId])
+  @@map("portfolios")
+}
+
+model Holding {
+  id                String            @id @default(uuid())
+  portfolioId       String
+  
+  symbol            String            // BTC, ETH, AAPL, EUR/USD
+  name              String            // Bitcoin, Ethereum, Apple Inc.
+  assetType         AssetType
+  
+  quantity          Decimal           @db.Decimal(20, 8)
+  averageCost       Decimal           @db.Decimal(20, 8) // Average purchase price
+  totalCost         Decimal           @db.Decimal(20, 2) // Total invested
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  portfolio         Portfolio         @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  
+  @@unique([portfolioId, symbol])
+  @@index([portfolioId])
+  @@index([symbol])
+  @@map("holdings")
+}
+
+model PortfolioTransaction {
+  id                String            @id @default(uuid())
+  portfolioId       String
+  
+  symbol            String
+  assetType         AssetType
+  transactionType   PortfolioTxType
+  
+  quantity          Decimal           @db.Decimal(20, 8)
+  price             Decimal           @db.Decimal(20, 8) // Price per unit at time of transaction
+  totalAmount       Decimal           @db.Decimal(20, 2)
+  fees              Decimal           @db.Decimal(10, 2) @default(0)
+  
+  notes             String?
+  executedAt        DateTime          @default(now())
+  createdAt         DateTime          @default(now())
+  
+  portfolio         Portfolio         @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  
+  @@index([portfolioId])
+  @@index([symbol])
+  @@index([executedAt])
+  @@map("portfolio_transactions")
+}
+
+model PortfolioSnapshot {
+  id                String            @id @default(uuid())
+  portfolioId       String
+  
+  totalValue        Decimal           @db.Decimal(20, 2)
+  totalCost         Decimal           @db.Decimal(20, 2)
+  profitLoss        Decimal           @db.Decimal(20, 2)
+  profitLossPercent Decimal           @db.Decimal(10, 4)
+  
+  holdingsData      Json              // Snapshot of all holdings at this time
+  
+  snapshotAt        DateTime          @default(now())
+  
+  portfolio         Portfolio         @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  
+  @@index([portfolioId])
+  @@index([snapshotAt])
+  @@map("portfolio_snapshots")
+}
+
+enum AssetType {
+  STOCK
+  CRYPTO
+  FOREX
+  ETF
+  BOND
+  COMMODITY
+  CASH
+}
+
+enum PortfolioTxType {
+  BUY
+  SELL
+  TRANSFER_IN
+  TRANSFER_OUT
+  DIVIDEND
+  INTEREST
+  FEE
+}
