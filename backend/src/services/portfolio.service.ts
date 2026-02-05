@@ -67,9 +67,11 @@ export async function getOrCreateDefaultPortfolio(userId: string) {
 }
 
 // Get portfolio with current market values
-export async function getPortfolioSummary(userId: string): Promise<PortfolioSummary> {
+export async function getPortfolioSummary(
+  userId: string,
+): Promise<PortfolioSummary> {
   const portfolio = await getOrCreateDefaultPortfolio(userId);
-  
+
   if (portfolio.holdings.length === 0) {
     return {
       id: portfolio.id,
@@ -99,22 +101,39 @@ export async function getPortfolioSummary(userId: string): Promise<PortfolioSumm
 
   // Fetch current prices
   const [cryptoQuotes, stockQuotes, forexRates] = await Promise.all([
-    cryptoSymbols.length > 0 ? marketService.getCryptoQuotes(cryptoSymbols) : [],
+    cryptoSymbols.length > 0
+      ? marketService.getCryptoQuotes(cryptoSymbols)
+      : [],
     stockSymbols.length > 0 ? marketService.getStockQuotes(stockSymbols) : [],
     forexPairs.length > 0 ? marketService.getForexRates(forexPairs) : [],
   ]);
 
   // Create price lookup map
-  const priceMap = new Map<string, { price: number; change: number; changePercent: number }>();
-  
+  const priceMap = new Map<
+    string,
+    { price: number; change: number; changePercent: number }
+  >();
+
   cryptoQuotes.forEach((q) => {
-    priceMap.set(q.symbol, { price: q.price, change: q.change24h, changePercent: q.changePercent24h });
+    priceMap.set(q.symbol, {
+      price: q.price,
+      change: q.change24h,
+      changePercent: q.changePercent24h,
+    });
   });
   stockQuotes.forEach((q) => {
-    priceMap.set(q.symbol, { price: q.price, change: q.change, changePercent: q.changePercent });
+    priceMap.set(q.symbol, {
+      price: q.price,
+      change: q.change,
+      changePercent: q.changePercent,
+    });
   });
   forexRates.forEach((r) => {
-    priceMap.set(r.pair, { price: r.rate, change: r.change, changePercent: r.changePercent });
+    priceMap.set(r.pair, {
+      price: r.rate,
+      change: r.change,
+      changePercent: r.changePercent,
+    });
   });
 
   // Calculate holdings with current values
@@ -122,41 +141,46 @@ export async function getPortfolioSummary(userId: string): Promise<PortfolioSumm
   let totalCost = 0;
   let totalDayChange = 0;
 
-  const holdingsWithValue: HoldingWithValue[] = portfolio.holdings.map((holding) => {
-    const marketData = priceMap.get(holding.symbol);
-    const quantity = Number(holding.quantity);
-    const avgCost = Number(holding.averageCost);
-    const holdingTotalCost = Number(holding.totalCost);
-    
-    const currentPrice = marketData?.price || avgCost;
-    const currentValue = quantity * currentPrice;
-    const profitLoss = currentValue - holdingTotalCost;
-    const profitLossPercent = holdingTotalCost > 0 ? (profitLoss / holdingTotalCost) * 100 : 0;
-    
-    const dayChange = marketData ? currentValue * (marketData.changePercent / 100) : 0;
-    const dayChangePercent = marketData?.changePercent || 0;
+  const holdingsWithValue: HoldingWithValue[] = portfolio.holdings.map(
+    (holding) => {
+      const marketData = priceMap.get(holding.symbol);
+      const quantity = Number(holding.quantity);
+      const avgCost = Number(holding.averageCost);
+      const holdingTotalCost = Number(holding.totalCost);
 
-    totalValue += currentValue;
-    totalCost += holdingTotalCost;
-    totalDayChange += dayChange;
+      const currentPrice = marketData?.price || avgCost;
+      const currentValue = quantity * currentPrice;
+      const profitLoss = currentValue - holdingTotalCost;
+      const profitLossPercent =
+        holdingTotalCost > 0 ? (profitLoss / holdingTotalCost) * 100 : 0;
 
-    return {
-      id: holding.id,
-      symbol: holding.symbol,
-      name: holding.name,
-      assetType: holding.assetType,
-      quantity,
-      averageCost: avgCost,
-      totalCost: holdingTotalCost,
-      currentPrice,
-      currentValue,
-      profitLoss,
-      profitLossPercent,
-      dayChange,
-      dayChangePercent,
-      allocation: 0, // Will be calculated after we have totalValue
-    };
-  });
+      const dayChange = marketData
+        ? currentValue * (marketData.changePercent / 100)
+        : 0;
+      const dayChangePercent = marketData?.changePercent || 0;
+
+      totalValue += currentValue;
+      totalCost += holdingTotalCost;
+      totalDayChange += dayChange;
+
+      return {
+        id: holding.id,
+        symbol: holding.symbol,
+        name: holding.name,
+        assetType: holding.assetType,
+        quantity,
+        averageCost: avgCost,
+        totalCost: holdingTotalCost,
+        currentPrice,
+        currentValue,
+        profitLoss,
+        profitLossPercent,
+        dayChange,
+        dayChangePercent,
+        allocation: 0, // Will be calculated after we have totalValue
+      };
+    },
+  );
 
   // Calculate allocation percentages
   holdingsWithValue.forEach((h) => {
@@ -183,7 +207,9 @@ export async function getPortfolioSummary(userId: string): Promise<PortfolioSumm
     CASH: "#64748b",
   };
 
-  const allocation: AllocationItem[] = Array.from(allocationByType.entries()).map(([type, value]) => ({
+  const allocation: AllocationItem[] = Array.from(
+    allocationByType.entries(),
+  ).map(([type, value]) => ({
     assetType: type,
     value,
     percentage: totalValue > 0 ? (value / totalValue) * 100 : 0,
@@ -192,7 +218,8 @@ export async function getPortfolioSummary(userId: string): Promise<PortfolioSumm
 
   const profitLoss = totalValue - totalCost;
   const profitLossPercent = totalCost > 0 ? (profitLoss / totalCost) * 100 : 0;
-  const dayChangePercent = totalValue > 0 ? (totalDayChange / (totalValue - totalDayChange)) * 100 : 0;
+  const dayChangePercent =
+    totalValue > 0 ? (totalDayChange / (totalValue - totalDayChange)) * 100 : 0;
 
   return {
     id: portfolio.id,
@@ -220,7 +247,7 @@ export async function addHolding(
     price: number;
     fees?: number;
     notes?: string;
-  }
+  },
 ) {
   const portfolio = await getOrCreateDefaultPortfolio(userId);
   const totalAmount = data.quantity * data.price;
@@ -294,7 +321,7 @@ export async function sellHolding(
     price: number;
     fees?: number;
     notes?: string;
-  }
+  },
 ) {
   const portfolio = await getOrCreateDefaultPortfolio(userId);
   const totalAmount = data.quantity * data.price;
@@ -315,7 +342,9 @@ export async function sellHolding(
 
   const currentQuantity = Number(holding.quantity);
   if (data.quantity > currentQuantity) {
-    throw new Error(`Insufficient quantity. You have ${currentQuantity} ${data.symbol}`);
+    throw new Error(
+      `Insufficient quantity. You have ${currentQuantity} ${data.symbol}`,
+    );
   }
 
   const newQuantity = currentQuantity - data.quantity;
@@ -363,7 +392,7 @@ export async function getTransactionHistory(
     symbol?: string;
     limit?: number;
     offset?: number;
-  }
+  },
 ) {
   const portfolio = await getOrCreateDefaultPortfolio(userId);
 
@@ -388,7 +417,7 @@ export async function getTransactionHistory(
 // Get portfolio performance over time
 export async function getPortfolioPerformance(
   userId: string,
-  period: "1W" | "1M" | "3M" | "1Y" | "ALL" = "1M"
+  period: "1W" | "1M" | "3M" | "1Y" | "ALL" = "1M",
 ) {
   const portfolio = await getOrCreateDefaultPortfolio(userId);
 
@@ -397,7 +426,7 @@ export async function getPortfolioPerformance(
     "1M": 30,
     "3M": 90,
     "1Y": 365,
-    "ALL": 9999,
+    ALL: 9999,
   };
 
   const startDate = new Date();
@@ -416,22 +445,22 @@ export async function getPortfolioPerformance(
     const currentSummary = await getPortfolioSummary(userId);
     const days = Math.min(periodDays[period], 30);
     const mockData = [];
-    
+
     for (let i = days; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      
+
       // Simulate some variation
       const variation = (Math.random() - 0.5) * 0.04; // ±2% daily variation
       const factor = 1 + variation * (i / days);
-      
+
       mockData.push({
         date: date.toISOString().split("T")[0],
         value: currentSummary.totalValue * factor,
         cost: currentSummary.totalCost,
       });
     }
-    
+
     return mockData;
   }
 

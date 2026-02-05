@@ -28,14 +28,15 @@ export const addHolding = async (req: Request, res: Response) => {
     const { symbol, name, assetType, quantity, price, fees, notes } = req.body;
 
     if (!symbol || !name || !assetType || !quantity || !price) {
-      return res.status(400).json({ 
-        error: "Missing required fields: symbol, name, assetType, quantity, price" 
+      return res.status(400).json({
+        error:
+          "Missing required fields: symbol, name, assetType, quantity, price",
       });
     }
 
     if (!Object.values(AssetType).includes(assetType)) {
-      return res.status(400).json({ 
-        error: `Invalid assetType. Must be one of: ${Object.values(AssetType).join(", ")}` 
+      return res.status(400).json({
+        error: `Invalid assetType. Must be one of: ${Object.values(AssetType).join(", ")}`,
       });
     }
 
@@ -66,8 +67,8 @@ export const sellHolding = async (req: Request, res: Response) => {
     const { symbol, quantity, price, fees, notes } = req.body;
 
     if (!symbol || !quantity || !price) {
-      return res.status(400).json({ 
-        error: "Missing required fields: symbol, quantity, price" 
+      return res.status(400).json({
+        error: "Missing required fields: symbol, quantity, price",
       });
     }
 
@@ -82,7 +83,10 @@ export const sellHolding = async (req: Request, res: Response) => {
     res.json(summary);
   } catch (error: any) {
     logger.error("Error selling holding:", error);
-    if (error.message?.includes("Insufficient") || error.message?.includes("No holding")) {
+    if (
+      error.message?.includes("Insufficient") ||
+      error.message?.includes("No holding")
+    ) {
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: "Failed to sell holding" });
@@ -146,14 +150,14 @@ export const getPerformance = async (req: Request, res: Response) => {
     const validPeriods = ["1W", "1M", "3M", "1Y", "ALL"];
 
     if (!validPeriods.includes(period as string)) {
-      return res.status(400).json({ 
-        error: `Invalid period. Must be one of: ${validPeriods.join(", ")}` 
+      return res.status(400).json({
+        error: `Invalid period. Must be one of: ${validPeriods.join(", ")}`,
       });
     }
 
     const performance = await portfolioService.getPortfolioPerformance(
       userId,
-      period as "1W" | "1M" | "3M" | "1Y" | "ALL"
+      period as "1W" | "1M" | "3M" | "1Y" | "ALL",
     );
 
     res.json(performance);

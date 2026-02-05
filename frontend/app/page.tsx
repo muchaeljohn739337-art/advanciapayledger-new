@@ -16,6 +16,18 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center space-x-4">
               <Link
+                href="/market"
+                className="text-gray-700 hover:text-blue-600"
+              >
+                Markets
+              </Link>
+              <Link
+                href="/portfolio"
+                className="text-gray-700 hover:text-blue-600"
+              >
+                Portfolio
+              </Link>
+              <Link
                 href="/playground"
                 className="text-gray-700 hover:text-blue-600"
               >
@@ -130,6 +142,16 @@ export default function LandingPage() {
               icon="📊"
               title="Smart Analytics"
               description="AI-powered insights, payment trends, and revenue optimization recommendations"
+            />
+            <FeatureCard
+              icon="📈"
+              title="Market Analytics"
+              description="Real-time stocks, crypto, and forex data with interactive charts and price tracking"
+            />
+            <FeatureCard
+              icon="💼"
+              title="Portfolio Tracking"
+              description="Track your investments, monitor P&L, and view allocation across all asset types"
             />
             <FeatureCard
               icon="🌐"

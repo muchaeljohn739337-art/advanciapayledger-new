@@ -118,11 +118,14 @@ export default function Portfolio() {
 
   const fetchPerformance = async () => {
     try {
-      const response = await fetch(`/api/portfolio/performance?period=${performancePeriod}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+      const response = await fetch(
+        `/api/portfolio/performance?period=${performancePeriod}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         },
-      });
+      );
       if (!response.ok) throw new Error("Failed to fetch performance");
       const data = await response.json();
       setPerformance(data);
@@ -149,7 +152,11 @@ export default function Portfolio() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchPortfolio(), fetchPerformance(), fetchTransactions()]);
+      await Promise.all([
+        fetchPortfolio(),
+        fetchPerformance(),
+        fetchTransactions(),
+      ]);
       setLoading(false);
     };
     loadData();
@@ -173,11 +180,23 @@ export default function Portfolio() {
     return `${sign}${value.toFixed(2)}%`;
   };
 
-  const PriceChange = ({ value, percent }: { value: number; percent: number }) => {
+  const PriceChange = ({
+    value,
+    percent,
+  }: {
+    value: number;
+    percent: number;
+  }) => {
     const isPositive = value >= 0;
     return (
-      <div className={`flex items-center gap-1 ${isPositive ? "text-green-600" : "text-red-600"}`}>
-        {isPositive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+      <div
+        className={`flex items-center gap-1 ${isPositive ? "text-green-600" : "text-red-600"}`}
+      >
+        {isPositive ? (
+          <ArrowUpRight className="h-4 w-4" />
+        ) : (
+          <ArrowDownRight className="h-4 w-4" />
+        )}
         <span className="font-medium">
           {formatCurrency(Math.abs(value))} ({formatPercent(percent)})
         </span>
@@ -187,7 +206,7 @@ export default function Portfolio() {
 
   const deleteHolding = async (holdingId: string) => {
     if (!confirm("Are you sure you want to remove this holding?")) return;
-    
+
     try {
       const response = await fetch(`/api/portfolio/holdings/${holdingId}`, {
         method: "DELETE",
@@ -231,7 +250,10 @@ export default function Portfolio() {
             Portfolio
           </h1>
           <p className="text-gray-500">
-            Last updated: {portfolio?.lastUpdated ? new Date(portfolio.lastUpdated).toLocaleString() : "N/A"}
+            Last updated:{" "}
+            {portfolio?.lastUpdated
+              ? new Date(portfolio.lastUpdated).toLocaleString()
+              : "N/A"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -250,25 +272,41 @@ export default function Portfolio() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
           <CardContent className="p-6">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Value</p>
-            <p className="text-3xl font-bold mt-1">{formatCurrency(portfolio?.totalValue || 0)}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Total Value
+            </p>
+            <p className="text-3xl font-bold mt-1">
+              {formatCurrency(portfolio?.totalValue || 0)}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Cost</p>
-            <p className="text-2xl font-bold mt-1">{formatCurrency(portfolio?.totalCost || 0)}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Total Cost
+            </p>
+            <p className="text-2xl font-bold mt-1">
+              {formatCurrency(portfolio?.totalCost || 0)}
+            </p>
           </CardContent>
         </Card>
 
-        <Card className={portfolio?.profitLoss && portfolio.profitLoss >= 0 ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20"}>
+        <Card
+          className={
+            portfolio?.profitLoss && portfolio.profitLoss >= 0
+              ? "bg-green-50 dark:bg-green-900/20"
+              : "bg-red-50 dark:bg-red-900/20"
+          }
+        >
           <CardContent className="p-6">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total P&L</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Total P&L
+            </p>
             <div className="mt-1">
-              <PriceChange 
-                value={portfolio?.profitLoss || 0} 
-                percent={portfolio?.profitLossPercent || 0} 
+              <PriceChange
+                value={portfolio?.profitLoss || 0}
+                percent={portfolio?.profitLossPercent || 0}
               />
             </div>
           </CardContent>
@@ -276,11 +314,13 @@ export default function Portfolio() {
 
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Today&apos;s Change</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Today&apos;s Change
+            </p>
             <div className="mt-1">
-              <PriceChange 
-                value={portfolio?.dayChange || 0} 
-                percent={portfolio?.dayChangePercent || 0} 
+              <PriceChange
+                value={portfolio?.dayChange || 0}
+                percent={portfolio?.dayChangePercent || 0}
               />
             </div>
           </CardContent>
@@ -316,22 +356,37 @@ export default function Portfolio() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={performance}>
                   <defs>
-                    <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient
+                      id="valueGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} />
-                  <YAxis 
-                    tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} 
-                    tick={{ fontSize: 12 }} 
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+                    tick={{ fontSize: 12 }}
                     tickLine={false}
                     axisLine={false}
                   />
-                  <Tooltip 
-                    formatter={(value: number) => [formatCurrency(value), "Value"]}
-                    labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                  <Tooltip
+                    formatter={(value: number) => [
+                      formatCurrency(value),
+                      "Value",
+                    ]}
+                    labelFormatter={(label) =>
+                      new Date(label).toLocaleDateString()
+                    }
                   />
                   <Area
                     type="monotone"
@@ -374,8 +429,11 @@ export default function Portfolio() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => [`${value.toFixed(1)}%`, ""]}
+                    <Tooltip
+                      formatter={(value: number) => [
+                        `${value.toFixed(1)}%`,
+                        "",
+                      ]}
                     />
                     <Legend />
                   </PieChart>
@@ -404,7 +462,9 @@ export default function Portfolio() {
                     <th className="pb-3 font-medium">Asset</th>
                     <th className="pb-3 font-medium text-right">Quantity</th>
                     <th className="pb-3 font-medium text-right">Avg Cost</th>
-                    <th className="pb-3 font-medium text-right">Current Price</th>
+                    <th className="pb-3 font-medium text-right">
+                      Current Price
+                    </th>
                     <th className="pb-3 font-medium text-right">Value</th>
                     <th className="pb-3 font-medium text-right">P&L</th>
                     <th className="pb-3 font-medium text-right">Allocation</th>
@@ -413,7 +473,10 @@ export default function Portfolio() {
                 </thead>
                 <tbody>
                   {portfolio.holdings.map((holding) => (
-                    <tr key={holding.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <tr
+                      key={holding.id}
+                      className="border-b hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
                       <td className="py-4">
                         <div className="flex items-center gap-2">
                           {holding.assetType === "CRYPTO" ? (
@@ -423,31 +486,51 @@ export default function Portfolio() {
                           )}
                           <div>
                             <p className="font-bold">{holding.symbol}</p>
-                            <p className="text-sm text-gray-500">{holding.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {holding.name}
+                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 text-right font-mono">
-                        {holding.quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+                        {holding.quantity.toLocaleString(undefined, {
+                          maximumFractionDigits: 8,
+                        })}
                       </td>
-                      <td className="py-4 text-right">{formatCurrency(holding.averageCost)}</td>
+                      <td className="py-4 text-right">
+                        {formatCurrency(holding.averageCost)}
+                      </td>
                       <td className="py-4 text-right">
                         <div>
                           <p>{formatCurrency(holding.currentPrice)}</p>
-                          <p className={`text-xs ${holding.dayChangePercent >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          <p
+                            className={`text-xs ${holding.dayChangePercent >= 0 ? "text-green-600" : "text-red-600"}`}
+                          >
                             {formatPercent(holding.dayChangePercent)}
                           </p>
                         </div>
                       </td>
-                      <td className="py-4 text-right font-medium">{formatCurrency(holding.currentValue)}</td>
+                      <td className="py-4 text-right font-medium">
+                        {formatCurrency(holding.currentValue)}
+                      </td>
                       <td className="py-4 text-right">
-                        <div className={holding.profitLoss >= 0 ? "text-green-600" : "text-red-600"}>
+                        <div
+                          className={
+                            holding.profitLoss >= 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
                           <p>{formatCurrency(holding.profitLoss)}</p>
-                          <p className="text-xs">{formatPercent(holding.profitLossPercent)}</p>
+                          <p className="text-xs">
+                            {formatPercent(holding.profitLossPercent)}
+                          </p>
                         </div>
                       </td>
                       <td className="py-4 text-right">
-                        <Badge variant="outline">{holding.allocation.toFixed(1)}%</Badge>
+                        <Badge variant="outline">
+                          {holding.allocation.toFixed(1)}%
+                        </Badge>
                       </td>
                       <td className="py-4 text-right">
                         <Button
@@ -561,7 +644,12 @@ function AddAssetModal({
               <Input
                 placeholder="BTC, AAPL..."
                 value={formData.symbol}
-                onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    symbol: e.target.value.toUpperCase(),
+                  })
+                }
                 required
               />
             </div>
@@ -570,7 +658,9 @@ function AddAssetModal({
               <select
                 className="w-full h-10 px-3 rounded-md border bg-transparent"
                 value={formData.assetType}
-                onChange={(e) => setFormData({ ...formData, assetType: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, assetType: e.target.value })
+                }
               >
                 <option value="CRYPTO">Crypto</option>
                 <option value="STOCK">Stock</option>
@@ -585,7 +675,9 @@ function AddAssetModal({
             <Input
               placeholder="Bitcoin, Apple Inc..."
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
             />
           </div>
@@ -598,7 +690,9 @@ function AddAssetModal({
                 step="any"
                 placeholder="0.5"
                 value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, quantity: e.target.value })
+                }
                 required
               />
             </div>
@@ -609,7 +703,9 @@ function AddAssetModal({
                 step="any"
                 placeholder="50000"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, price: e.target.value })
+                }
                 required
               />
             </div>
@@ -622,16 +718,27 @@ function AddAssetModal({
               step="any"
               placeholder="0"
               value={formData.fees}
-              onChange={(e) => setFormData({ ...formData, fees: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, fees: e.target.value })
+              }
             />
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Add Asset"}
+              {loading ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                "Add Asset"
+              )}
             </Button>
           </div>
         </form>
@@ -663,9 +770,14 @@ function TransactionsModal({
           {transactions.length > 0 ? (
             <div className="space-y-3">
               {transactions.map((tx) => (
-                <div key={tx.id} className="flex justify-between items-center p-3 border rounded-lg">
+                <div
+                  key={tx.id}
+                  className="flex justify-between items-center p-3 border rounded-lg"
+                >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${tx.transactionType === "BUY" ? "bg-green-100" : "bg-red-100"}`}>
+                    <div
+                      className={`p-2 rounded-full ${tx.transactionType === "BUY" ? "bg-green-100" : "bg-red-100"}`}
+                    >
                       {tx.transactionType === "BUY" ? (
                         <ArrowDownRight className="h-4 w-4 text-green-600" />
                       ) : (
