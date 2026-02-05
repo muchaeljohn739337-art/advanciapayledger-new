@@ -10,6 +10,12 @@ interface ChatBotProps {
   transactions: Transaction[];
 }
 
+interface ChatMessage {
+  role: "user" | "model";
+  text: string;
+  timestamp: Date;
+}
+
 const ChatBot: React.FC<ChatBotProps> = ({ onClose, transactions }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -44,7 +50,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ onClose, transactions }) => {
       const response = await analyzeFinancialData(transactions, input);
       const botMessage: ChatMessage = {
         role: "model",
-        text: response,
+        text: response.summary || "Analysis complete.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);

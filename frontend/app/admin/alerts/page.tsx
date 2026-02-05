@@ -1,50 +1,54 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import AdminAlertDashboard from '@/components/AdminAlertDashboard'
-import { authenticate } from '@/lib/auth'
+import { useState, useEffect } from "react";
+import AdminAlertDashboard from "@/components/AdminAlertDashboard";
+import { authenticate } from "@/lib/auth";
 
 export default function AlertsPage() {
-  const [isAuthorized, setIsAuthorized] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuthorization()
-  }, [])
+    checkAuthorization();
+  }, []);
 
   const checkAuthorization = async () => {
     try {
-      const user = await authenticate()
-      if (user?.role === 'ADMIN') {
-        setIsAuthorized(true)
+      const user = await authenticate();
+      if (user?.role === "SUPER_ADMIN" || user?.role === "FACILITY_ADMIN") {
+        setIsAuthorized(true);
       } else {
-        window.location.href = '/admin/login'
+        window.location.href = "/admin/login";
       }
     } catch (error) {
-      console.error('Authorization check failed:', error)
-      window.location.href = '/admin/login'
+      console.error("Authorization check failed:", error);
+      window.location.href = "/admin/login";
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
-    )
+    );
   }
 
   if (!isAuthorized) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Access Denied
+          </h1>
+          <p className="text-gray-600">
+            You don't have permission to access this page.
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -53,5 +57,5 @@ export default function AlertsPage() {
         <AdminAlertDashboard />
       </div>
     </div>
-  )
+  );
 }
