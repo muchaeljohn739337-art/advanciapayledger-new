@@ -27,6 +27,7 @@ import currencyRoutes from "./routes/currency.routes";
 import healthRouter from "./routes/health";
 import monitoringRoutes from "./routes/monitoring";
 import userRoutes from "./routes/users";
+import { marketRoutes } from "./routes/market";
 // Temporarily disabled routes with schema mismatches
 // import patientRoutes from "./routes/patients";
 // import providerRoutes from "./routes/providers";
@@ -110,6 +111,7 @@ app.use("/api/crypto", cryptoRoutes);
 app.use("/api/schedule", scheduleRoutes);
 app.use("/api/currency", currencyRoutes);
 app.use("/api/monitoring", monitoringRoutes);
+app.use("/api/market", marketRoutes);
 
 // Error handling
 app.use(notFoundHandler);
