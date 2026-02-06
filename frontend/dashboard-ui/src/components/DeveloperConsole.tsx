@@ -1,26 +1,26 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Terminal, 
-  Send, 
-  Copy, 
-  CheckCircle, 
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Terminal,
+  Send,
+  Copy,
+  CheckCircle,
   AlertTriangle,
   ChevronDown,
   Command,
   ArrowUp,
   ArrowDown,
   Home,
-  End
-} from 'lucide-react';
+  MoveHorizontal,
+} from "lucide-react";
 
 interface ConsoleCommand {
   id: string;
   command: string;
   output: string;
   timestamp: string;
-  type: 'input' | 'output' | 'error' | 'success';
+  type: "input" | "output" | "error" | "success";
 }
 
 interface CommandHistory {
@@ -30,38 +30,41 @@ interface CommandHistory {
 
 export default function DeveloperConsole() {
   const [commands, setCommands] = useState<ConsoleCommand[]>([]);
-  const [currentCommand, setCurrentCommand] = useState('');
-  const [history, setHistory] = useState<CommandHistory>({ commands: [], index: -1 });
+  const [currentCommand, setCurrentCommand] = useState("");
+  const [history, setHistory] = useState<CommandHistory>({
+    commands: [],
+    index: -1,
+  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
+
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const commandSuggestions = [
-    'deploy service',
-    'restart service',
-    'logs service',
-    'status service',
-    'config get',
-    'config set',
-    'health check',
-    'metrics get',
-    'cache clear',
-    'db migrate',
-    'ai task list',
-    'ai task run',
-    'web3 events',
-    'security scan',
-    'help',
+    "deploy service",
+    "restart service",
+    "logs service",
+    "status service",
+    "config get",
+    "config set",
+    "health check",
+    "metrics get",
+    "cache clear",
+    "db migrate",
+    "ai task list",
+    "ai task run",
+    "web3 events",
+    "security scan",
+    "help",
   ];
 
   useEffect(() => {
     // Add welcome message
     const welcomeCommand: ConsoleCommand = {
-      id: 'welcome',
-      command: '',
+      id: "welcome",
+      command: "",
       output: `🚀 Advancia Developer Console v1.0.0
 Type 'help' for available commands or use Tab for suggestions.
 
@@ -77,7 +80,7 @@ Quick Commands:
 • logs <service> - View service logs
 • status - Check all services status`,
       timestamp: new Date().toISOString(),
-      type: 'output'
+      type: "output",
     };
     setCommands([welcomeCommand]);
   }, []);
@@ -96,52 +99,61 @@ Quick Commands:
     const timestamp = new Date().toISOString();
 
     // Add command to history
-    setCommands(prev => [...prev, {
-      id: commandId,
-      command: commandText,
-      output: '',
-      timestamp,
-      type: 'input'
-    }]);
+    setCommands((prev) => [
+      ...prev,
+      {
+        id: commandId,
+        command: commandText,
+        output: "",
+        timestamp,
+        type: "input",
+      },
+    ]);
 
     // Add to command history
-    setHistory(prev => ({
+    setHistory((prev) => ({
       commands: [...prev.commands, commandText],
-      index: -1
+      index: -1,
     }));
 
     setIsProcessing(true);
-    setCurrentCommand('');
+    setCurrentCommand("");
 
     try {
       // Simulate command execution
       const output = await processCommand(commandText);
-      
-      setCommands(prev => [...prev, {
-        id: `${commandId}-output`,
-        command: '',
-        output,
-        timestamp: new Date().toISOString(),
-        type: output.toLowerCase().includes('error') ? 'error' : 'success'
-      }]);
+
+      setCommands((prev) => [
+        ...prev,
+        {
+          id: `${commandId}-output`,
+          command: "",
+          output,
+          timestamp: new Date().toISOString(),
+          type: output.toLowerCase().includes("error") ? "error" : "success",
+        },
+      ]);
     } catch (error) {
-      setCommands(prev => [...prev, {
-        id: `${commandId}-error`,
-        command: '',
-        output: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date().toISOString(),
-        type: 'error'
-      }]);
+      setCommands((prev) => [
+        ...prev,
+        {
+          id: `${commandId}-error`,
+          command: "",
+          output: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+          timestamp: new Date().toISOString(),
+          type: "error",
+        },
+      ]);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const processCommand = async (commandText: string): Promise<string> => {
-    const [command, ...args] = commandText.trim().split(' ');
-    
+    const [command, ...args] = commandText.trim().split(" ");
+
     switch (command.toLowerCase()) {
-      case 'help':
+      case "help":
         return `Available Commands:
 • deploy <service> - Deploy a service
 • restart <service> - Restart a service  
@@ -162,16 +174,17 @@ Quick Commands:
 
 Services: api-gateway, monitoring-service, web3-service, ai-orchestrator`;
 
-      case 'clear':
+      case "clear":
         setCommands([]);
-        return 'Console cleared';
+        return "Console cleared";
 
-      case 'history':
-        return history.commands.slice(-10).map((cmd, i) => 
-          `${i + 1}. ${cmd}`
-        ).join('\n');
+      case "history":
+        return history.commands
+          .slice(-10)
+          .map((cmd, i) => `${i + 1}. ${cmd}`)
+          .join("\n");
 
-      case 'status':
+      case "status":
         return `Service Status:
 ✅ api-gateway - Running (99.9% uptime)
 ✅ monitoring-service - Running (CPU: 23%, Memory: 45%)
@@ -180,9 +193,9 @@ Services: api-gateway, monitoring-service, web3-service, ai-orchestrator`;
 
 Overall: HEALTHY`;
 
-      case 'deploy':
+      case "deploy":
         if (!args[0]) {
-          return 'Error: Service name required. Usage: deploy <service>';
+          return "Error: Service name required. Usage: deploy <service>";
         }
         return `Deploying ${args[0]}...
 ✅ Build completed
@@ -190,18 +203,18 @@ Overall: HEALTHY`;
 ✅ Deployment successful
 🚀 ${args[0]} is now running version v2.1.3`;
 
-      case 'restart':
+      case "restart":
         if (!args[0]) {
-          return 'Error: Service name required. Usage: restart <service>';
+          return "Error: Service name required. Usage: restart <service>";
         }
         return `Restarting ${args[0]}...
 ⏹️ Service stopped
 ▶️ Service starting
 ✅ ${args[0]} restarted successfully`;
 
-      case 'logs':
+      case "logs":
         if (!args[0]) {
-          return 'Error: Service name required. Usage: logs <service>';
+          return "Error: Service name required. Usage: logs <service>";
         }
         return `Recent logs for ${args[0]}:
 [${new Date().toISOString()}] INFO: Service started successfully
@@ -209,7 +222,7 @@ Overall: HEALTHY`;
 [${new Date(Date.now() - 120000).toISOString()}] WARN: High memory usage detected
 [${new Date(Date.now() - 180000).toISOString()}] INFO: Request processed: GET /health`;
 
-      case 'health':
+      case "health":
         return `Health Check Results:
 ✅ API Gateway: All endpoints responding
 ✅ Database: Connection healthy (45/100 connections)
@@ -219,7 +232,7 @@ Overall: HEALTHY`;
 
 Overall Status: HEALTHY`;
 
-      case 'metrics':
+      case "metrics":
         return `System Metrics:
 CPU: 23% (4 cores available)
 Memory: 45% (8.2GB / 16GB)
@@ -227,8 +240,8 @@ Disk: 67% (120GB / 180GB)
 Network: 1.2MB/s up, 3.4MB/s down
 Uptime: 14d 7h 23m`;
 
-      case 'ai':
-        if (args[0] === 'task' && args[1] === 'list') {
+      case "ai":
+        if (args[0] === "task" && args[1] === "list") {
           return `Active AI Tasks:
 1. Code Generation (running) - 1,247 tokens used
 2. Security Analysis (pending) - Queue position: 2
@@ -236,9 +249,9 @@ Uptime: 14d 7h 23m`;
 
 Queue: 2 pending tasks`;
         }
-        if (args[0] === 'task' && args[1] === 'run') {
+        if (args[0] === "task" && args[1] === "run") {
           if (!args[2]) {
-            return 'Error: Task type required. Usage: ai task run <type>';
+            return "Error: Task type required. Usage: ai task run <type>";
           }
           return `Running AI task: ${args[2]}
 ⚡ Processing request...
@@ -247,10 +260,10 @@ Queue: 2 pending tasks`;
 Output: Analysis complete. 3 recommendations generated.
 Tokens used: 1,247`;
         }
-        return 'Usage: ai task <list|run> [type]';
+        return "Usage: ai task <list|run> [type]";
 
-      case 'web3':
-        if (args[0] === 'events') {
+      case "web3":
+        if (args[0] === "events") {
           return `Recent Web3 Events:
 • Ethereum: Transfer event (0x1234...abcd) - 2 min ago
 • Solana: Account change (9Wz2...xyz) - 5 min ago  
@@ -259,10 +272,10 @@ Tokens used: 1,247`;
 
 Total events today: 1,247`;
         }
-        return 'Usage: web3 events';
+        return "Usage: web3 events";
 
-      case 'security':
-        if (args[0] === 'scan') {
+      case "security":
+        if (args[0] === "scan") {
           return `Security Scan Results:
 ✅ Authentication: No vulnerabilities found
 ✅ API Endpoints: Rate limiting active
@@ -272,7 +285,7 @@ Total events today: 1,247`;
 
 Overall: SECURE`;
         }
-        return 'Usage: security scan';
+        return "Usage: security scan";
 
       default:
         return `Command not found: ${command}
@@ -282,51 +295,56 @@ Type 'help' for available commands`;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     switch (e.key) {
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         executeCommand(currentCommand);
         break;
-      
-      case 'Tab':
+
+      case "Tab":
         e.preventDefault();
         // Auto-complete
-        const matches = commandSuggestions.filter(cmd => 
-          cmd.startsWith(currentCommand.toLowerCase())
+        const matches = commandSuggestions.filter((cmd) =>
+          cmd.startsWith(currentCommand.toLowerCase()),
         );
         if (matches.length > 0) {
           setCurrentCommand(matches[0]);
         }
         break;
-      
-      case 'ArrowUp':
+
+      case "ArrowUp":
         e.preventDefault();
         if (history.commands.length > 0) {
-          const newIndex = Math.min(history.index + 1, history.commands.length - 1);
-          const command = history.commands[history.commands.length - 1 - newIndex];
+          const newIndex = Math.min(
+            history.index + 1,
+            history.commands.length - 1,
+          );
+          const command =
+            history.commands[history.commands.length - 1 - newIndex];
           setCurrentCommand(command);
           setHistory({ ...history, index: newIndex });
         }
         break;
-      
-      case 'ArrowDown':
+
+      case "ArrowDown":
         e.preventDefault();
         if (history.index > 0) {
           const newIndex = history.index - 1;
-          const command = history.commands[history.commands.length - 1 - newIndex];
+          const command =
+            history.commands[history.commands.length - 1 - newIndex];
           setCurrentCommand(command);
           setHistory({ ...history, index: newIndex });
         } else if (history.index === 0) {
-          setCurrentCommand('');
+          setCurrentCommand("");
           setHistory({ ...history, index: -1 });
         }
         break;
-      
-      case 'Home':
+
+      case "Home":
         e.preventDefault();
         inputRef.current?.setSelectionRange(0, 0);
         break;
-      
-      case 'End':
+
+      case "End":
         e.preventDefault();
         const input = inputRef.current;
         if (input) {
@@ -343,11 +361,11 @@ Type 'help' for available commands`;
 
   const getCommandIcon = (type: string) => {
     switch (type) {
-      case 'input':
+      case "input":
         return <ChevronDown className="w-3 h-3 text-blue-400" />;
-      case 'output':
+      case "output":
         return <CheckCircle className="w-3 h-3 text-emerald-400" />;
-      case 'error':
+      case "error":
         return <AlertTriangle className="w-3 h-3 text-red-400" />;
       default:
         return <Terminal className="w-3 h-3 text-gray-400" />;
@@ -359,11 +377,17 @@ Type 'help' for available commands`;
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Terminal className="w-5 h-5 text-green-400" />
-          <h2 className="text-lg font-black text-green-400">Developer Console</h2>
+          <h2 className="text-lg font-black text-green-400">
+            Developer Console
+          </h2>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => copyToClipboard(commands.map(c => c.command || c.output).join('\n'))}
+            onClick={() =>
+              copyToClipboard(
+                commands.map((c) => c.command || c.output).join("\n"),
+              )
+            }
             className="p-2 hover:bg-white/10 rounded transition"
             title="Copy all output"
           >
@@ -399,11 +423,15 @@ Type 'help' for available commands`;
               <div className="ml-4">
                 <div className="flex items-start gap-2">
                   {getCommandIcon(cmd.type)}
-                  <pre className={`whitespace-pre-wrap ${
-                    cmd.type === 'error' ? 'text-red-400' : 
-                    cmd.type === 'success' ? 'text-emerald-400' : 
-                    'text-gray-300'
-                  }`}>
+                  <pre
+                    className={`whitespace-pre-wrap ${
+                      cmd.type === "error"
+                        ? "text-red-400"
+                        : cmd.type === "success"
+                          ? "text-emerald-400"
+                          : "text-gray-300"
+                    }`}
+                  >
                     {cmd.output}
                   </pre>
                 </div>
@@ -451,7 +479,9 @@ Type 'help' for available commands`;
             className="absolute bottom-full left-0 mb-2 bg-black/90 border border-white/20 rounded-lg p-2 z-10"
           >
             {commandSuggestions
-              .filter(cmd => cmd.toLowerCase().startsWith(currentCommand.toLowerCase()))
+              .filter((cmd) =>
+                cmd.toLowerCase().startsWith(currentCommand.toLowerCase()),
+              )
               .slice(0, 5)
               .map((suggestion, index) => (
                 <div

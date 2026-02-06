@@ -1,20 +1,37 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext'; // Assuming you have an AuthContext
+"use client";
 
-const withAdminAuth = (WrappedComponent: React.ComponentType<any>) => {
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+
+type AdminRole =
+  | "SUPER_ADMIN"
+  | "FACILITY_ADMIN"
+  | "FACILITY_STAFF"
+  | "BILLING_MANAGER";
+
+const withAdminAuth = (
+  WrappedComponent: React.ComponentType<any>,
+  allowedRoles: AdminRole[] = ["SUPER_ADMIN", "FACILITY_ADMIN"],
+) => {
   const Wrapper = (props: any) => {
     const router = useRouter();
     const { user, loading } = useAuth();
 
-    useEffect(() => {
-      if (!loading && (!user || user.role !== 'ADMIN')) {
-        router.push('/login'); // Redirect to login if not an admin
-      }
-    }, [user, loading, router]);
+    const isAuthorized = user && allowedRoles.includes(user.role as AdminRole);
 
-    if (loading || !user || user.role !== 'ADMIN') {
-      return <div>Loading...</div>; // Or a proper loading spinner
+    useEffect(() => {
+      if (!loading && !isAuthorized) {
+        router.push("/login");
+      }
+    }, [user, loading, router, isAuthorized]);
+
+    if (loading || !isAuthorized) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      );
     }
 
     return <WrappedComponent {...props} />;

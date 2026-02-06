@@ -10,16 +10,19 @@ datasource db {
 // --- User Management & Authentication ---
 model User {
   id                String    @id @default(uuid())
+  supabaseId        String?   @unique  // For Supabase Auth integration
   email             String    @unique
-  passwordHash      String
-  firstName         String
-  lastName          String
+  passwordHash      String?
+  firstName         String?
+  lastName          String?
   phoneNumber       String?
-  role              UserRole
+  role              UserRole  @default(PATIENT)
   status            UserStatus @default(ACTIVE)
+  isActive          Boolean   @default(true)  // Compatibility field
   emailVerified     Boolean   @default(false)
   totpSecret        String?   // 2FA/TOTP
   totpEnabled       Boolean   @default(false)
+  twoFactorEnabled  Boolean   @default(false) // Alias for totpEnabled
   lastLoginAt       DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -28,7 +31,6 @@ model User {
   facility          Facility? @relation(fields: [facilityId], references: [id])
   facilityId        String?
   sessions          Session[]
-  auditLogs         AuditLog[]
   notifications     Notification[]
   oauthProviders    OAuthProvider[]
   wallets           Wallet[]
@@ -36,6 +38,7 @@ model User {
   
   @@index([email])
   @@index([facilityId])
+  @@index([supabaseId])
   @@map("users")
 }
 
@@ -140,6 +143,8 @@ model Facility {
   paymentMethods        PaymentMethod[]
   ehrIntegration        EHRIntegration?
   analytics             FacilityAnalytics[]
+  payments              Payment[]
+  providers             Provider[]
   
   @@index([status])
   @@index([subscriptionTier])
@@ -220,6 +225,7 @@ model Patient {
   invoices          Invoice[]
   paymentMethods    PaymentMethod[]
   appointments      Appointment[]
+  payments          Payment[]
   
   @@unique([facilityId, mrn])
   @@index([facilityId])
@@ -440,6 +446,7 @@ enum PaymentMethodStatus {
 model Refund {
   id                String          @id @default(uuid())
   transactionId     String
+  paymentId         String?         // Alias for transactionId - backwards compatibility
   
   amount            Decimal         @db.Decimal(10, 2)
   currency          String          @default("USD")
@@ -455,6 +462,7 @@ model Refund {
   transaction       Transaction     @relation(fields: [transactionId], references: [id])
   
   @@index([transactionId])
+  @@index([paymentId])
   @@map("refunds")
 }
 
@@ -647,17 +655,19 @@ model AuditLog {
   userId        String?
   
   action        String    // 'CREATE', 'UPDATE', 'DELETE', 'LOGIN', etc.
-  entityType    String    // 'Patient', 'Transaction', etc.
+  entityType    String?   // 'Patient', 'Transaction', etc.
+  resource      String?   // Alias for entityType - backwards compatibility
   entityId      String?
+  resourceId    String?   // Alias for entityId - backwards compatibility
   
   // HIPAA Tracking
   ipAddress     String?
   userAgent     String?
   metadata      Json?
+  details       Json?     // Alias for metadata - backwards compatibility
   
   timestamp     DateTime  @default(now())
-  
-  user          User?     @relation(fields: [userId], references: [id])
+  createdAt     DateTime  @default(now()) // Alias for timestamp
   
   @@index([userId])
   @@index([entityType, entityId])
@@ -784,4 +794,274 @@ enum NotificationPriority {
   NORMAL
   HIGH
   URGENT
+}
+
+// --- Payment Model (alias for Transaction for backward compatibility) ---
+model Payment {
+  id                String            @id @default(uuid())
+  facilityId        String
+  patientId         String?
+  providerId        String?
+  invoiceId         String?
+  
+  amount            Decimal           @db.Decimal(10, 2)
+  currency          String            @default("USD")
+  paymentMethod     PaymentMethodType
+  status            TransactionStatus @default(PENDING)
+  
+  // Stripe Integration
+  stripePaymentIntentId String?       @unique
+  stripeChargeId        String?
+  
+  // Crypto
+  blockchainNetwork     BlockchainNetwork?
+  walletAddress         String?
+  transactionHash       String?       
+  cryptoAmount          Decimal?      @db.Decimal(20, 8)
+  cryptoCurrency        String?
+  transactionId         String?
+  
+  // Fees & Settlement
+  processingFee         Decimal?      @db.Decimal(10, 2)
+  platformFee           Decimal?      @db.Decimal(10, 2)
+  netAmount             Decimal?      @db.Decimal(10, 2)
+  
+  description           String?
+  metadata              Json?
+  createdBy             String?
+  
+  processedAt           DateTime?
+  settledAt             DateTime?
+  refundedAt            DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  
+  // Relations
+  facility              Facility      @relation(fields: [facilityId], references: [id])
+  patient               Patient?      @relation(fields: [patientId], references: [id])
+  
+  @@index([facilityId])
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+// --- Crypto Payments ---
+model CryptoPayment {
+  id                String            @id @default(uuid())
+  paymentId         String?
+  userId            String
+  
+  amount            Decimal           @db.Decimal(20, 8)
+  currency          String
+  cryptoCurrency    String
+  walletAddress     String
+  network           BlockchainNetwork
+  transactionHash   String?           @unique
+  
+  status            TransactionStatus @default(PENDING)
+  confirmations     Int               @default(0)
+  
+  exchangeRate      Decimal?          @db.Decimal(20, 8)
+  feeAmount         Decimal?          @db.Decimal(20, 8)
+  
+  expiresAt         DateTime?
+  confirmedAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@map("crypto_payments")
+}
+
+// --- Multi-tenant Support ---
+model Tenant {
+  id                String            @id @default(uuid())
+  name              String
+  subdomain         String            @unique
+  domain            String?           @unique
+  status            String            @default("active")
+  plan              String            @default("free")
+  settings          Json?
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  tenantUsers       TenantUser[]
+  
+  @@map("tenants")
+}
+
+model TenantUser {
+  id                String            @id @default(uuid())
+  tenantId          String
+  userId            String
+  role              String            @default("member")
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("tenant_users")
+}
+
+// --- Provider Model ---
+model Provider {
+  id                String            @id @default(uuid())
+  facilityId        String
+  userId            String?
+  
+  firstName         String
+  lastName          String
+  email             String?
+  phone             String?
+  npi               String?           @unique
+  specialty         String?
+  
+  isActive          Boolean           @default(true)
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  facility          Facility          @relation(fields: [facilityId], references: [id])
+  
+  @@index([facilityId])
+  @@map("providers")
+}
+
+// --- Alert Model ---
+model Alert {
+  id                String            @id @default(uuid())
+  userId            String
+  type              String
+  severity          String
+  title             String
+  message           String
+  transactionId     String?
+  amount            Decimal?          @db.Decimal(10, 2)
+  currency          String?
+  paymentMethod     String?
+  riskScore         Float?
+  isRead            Boolean           @default(false)
+  metadata          Json?
+  
+  createdAt         DateTime          @default(now())
+  
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("alerts")
+}
+
+// --- Portfolio & Holdings ---
+model Portfolio {
+  id                String            @id @default(uuid())
+  userId            String
+  name              String            @default("Main Portfolio")
+  description       String?
+  isDefault         Boolean           @default(false)
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  holdings          Holding[]
+  transactions      PortfolioTransaction[]
+  snapshots         PortfolioSnapshot[]
+  
+  @@index([userId])
+  @@map("portfolios")
+}
+
+model Holding {
+  id                String            @id @default(uuid())
+  portfolioId       String
+  
+  symbol            String            // BTC, ETH, AAPL, EUR/USD
+  name              String            // Bitcoin, Ethereum, Apple Inc.
+  assetType         AssetType
+  
+  quantity          Decimal           @db.Decimal(20, 8)
+  averageCost       Decimal           @db.Decimal(20, 8) // Average purchase price
+  totalCost         Decimal           @db.Decimal(20, 2) // Total invested
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  portfolio         Portfolio         @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  
+  @@unique([portfolioId, symbol])
+  @@index([portfolioId])
+  @@index([symbol])
+  @@map("holdings")
+}
+
+model PortfolioTransaction {
+  id                String            @id @default(uuid())
+  portfolioId       String
+  
+  symbol            String
+  assetType         AssetType
+  transactionType   PortfolioTxType
+  
+  quantity          Decimal           @db.Decimal(20, 8)
+  price             Decimal           @db.Decimal(20, 8) // Price per unit at time of transaction
+  totalAmount       Decimal           @db.Decimal(20, 2)
+  fees              Decimal           @db.Decimal(10, 2) @default(0)
+  
+  notes             String?
+  executedAt        DateTime          @default(now())
+  createdAt         DateTime          @default(now())
+  
+  portfolio         Portfolio         @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  
+  @@index([portfolioId])
+  @@index([symbol])
+  @@index([executedAt])
+  @@map("portfolio_transactions")
+}
+
+model PortfolioSnapshot {
+  id                String            @id @default(uuid())
+  portfolioId       String
+  
+  totalValue        Decimal           @db.Decimal(20, 2)
+  totalCost         Decimal           @db.Decimal(20, 2)
+  profitLoss        Decimal           @db.Decimal(20, 2)
+  profitLossPercent Decimal           @db.Decimal(10, 4)
+  
+  holdingsData      Json              // Snapshot of all holdings at this time
+  
+  snapshotAt        DateTime          @default(now())
+  
+  portfolio         Portfolio         @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  
+  @@index([portfolioId])
+  @@index([snapshotAt])
+  @@map("portfolio_snapshots")
+}
+
+enum AssetType {
+  STOCK
+  CRYPTO
+  FOREX
+  ETF
+  BOND
+  COMMODITY
+  CASH
+}
+
+enum PortfolioTxType {
+  BUY
+  SELL
+  TRANSFER_IN
+  TRANSFER_OUT
+  DIVIDEND
+  INTEREST
+  FEE
 }

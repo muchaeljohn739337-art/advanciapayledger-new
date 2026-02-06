@@ -1,12 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Globe } from "lucide-react";
 import withAdminAuth from "@/hoc/withAdminAuth";
-import withRoleGuard from "@/src/components/withRoleGuard";
-import { UserRole } from "@/src/types/user";
+import { withRoleGuard } from "@/src/components/withRoleGuard";
 import BusinessEcosystem from "@/components/BusinessEcosystem";
+
+// Force dynamic rendering - requires client-side auth context
+export const dynamic = "force-dynamic";
 
 function AdminConsolePage() {
   const [activeTab, setActiveTab] = useState<
@@ -181,20 +183,26 @@ function DashboardView() {
       <div className="grid grid-cols-2 gap-6">
         {/* Login Activity */}
         <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-          <h3 className="text-xl font-bold text-white mb-6">Login Activity (24h)</h3>
+          <h3 className="text-xl font-bold text-white mb-6">
+            Login Activity (24h)
+          </h3>
           <LoginActivityChart />
         </div>
 
         {/* User Distribution */}
         <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-          <h3 className="text-xl font-bold text-white mb-6">User Role Distribution</h3>
+          <h3 className="text-xl font-bold text-white mb-6">
+            User Role Distribution
+          </h3>
           <UserRoleChart />
         </div>
       </div>
 
       {/* Recent Activity */}
       <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-        <h3 className="text-xl font-bold text-white mb-6">Recent Critical Events</h3>
+        <h3 className="text-xl font-bold text-white mb-6">
+          Recent Critical Events
+        </h3>
         <div className="space-y-3">
           <ActivityRow
             icon="🔴"
@@ -246,8 +254,8 @@ function UsersView() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -582,12 +590,34 @@ function SecurityView() {
 
       {/* Blocked IPs */}
       <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-        <h3 className="text-xl font-bold text-white mb-6">Blocked IP Addresses</h3>
+        <h3 className="text-xl font-bold text-white mb-6">
+          Blocked IP Addresses
+        </h3>
         <div className="space-y-3">
-          <BlockedIPRow ip="203.0.113.45" reason="Brute force attack" blocked="5 min ago" attempts={8} />
-          <BlockedIPRow ip="198.51.100.0" reason="Multiple failed logins" blocked="2 hours ago" attempts={12} />
-          <BlockedIPRow ip="192.0.2.100" reason="SQL injection attempt" blocked="1 day ago" attempts={3} />
-          <BlockedIPRow ip="203.0.113.88" reason="DDoS pattern detected" blocked="2 days ago" attempts={150} />
+          <BlockedIPRow
+            ip="203.0.113.45"
+            reason="Brute force attack"
+            blocked="5 min ago"
+            attempts={8}
+          />
+          <BlockedIPRow
+            ip="198.51.100.0"
+            reason="Multiple failed logins"
+            blocked="2 hours ago"
+            attempts={12}
+          />
+          <BlockedIPRow
+            ip="192.0.2.100"
+            reason="SQL injection attempt"
+            blocked="1 day ago"
+            attempts={3}
+          />
+          <BlockedIPRow
+            ip="203.0.113.88"
+            reason="DDoS pattern detected"
+            blocked="2 days ago"
+            attempts={150}
+          />
         </div>
       </div>
     </div>
@@ -657,7 +687,9 @@ function SettingsView() {
 
       {/* Notification Settings */}
       <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-        <h3 className="text-xl font-bold text-white mb-6">Admin Notifications</h3>
+        <h3 className="text-xl font-bold text-white mb-6">
+          Admin Notifications
+        </h3>
         <div className="space-y-4">
           <SettingRow
             label="Email on Failed Login"
@@ -695,8 +727,8 @@ function TabButton({ icon, label, active, onClick }: any) {
       onClick={onClick}
       className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition ${
         active
-          ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg'
-          : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+          ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg"
+          : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
       }`}
     >
       <span className="text-xl">{icon}</span>
@@ -708,13 +740,19 @@ function TabButton({ icon, label, active, onClick }: any) {
 function MetricCard({ title, value, change, trend, icon, gradient }: any) {
   return (
     <div className="group relative">
-      <div className={`absolute inset-0 bg-gradient-to-r ${gradient} opacity-20 rounded-2xl blur-xl group-hover:opacity-30 transition`}></div>
+      <div
+        className={`absolute inset-0 bg-gradient-to-r ${gradient} opacity-20 rounded-2xl blur-xl group-hover:opacity-30 transition`}
+      ></div>
       <div className="relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <span className="text-4xl">{icon}</span>
-          <span className={`text-sm font-bold px-2 py-1 rounded-lg ${
-            trend === 'up' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
-          }`}>
+          <span
+            className={`text-sm font-bold px-2 py-1 rounded-lg ${
+              trend === "up"
+                ? "bg-green-500/20 text-green-300"
+                : "bg-red-500/20 text-red-300"
+            }`}
+          >
             {change}
           </span>
         </div>
@@ -727,15 +765,17 @@ function MetricCard({ title, value, change, trend, icon, gradient }: any) {
 
 function StatBadge({ label, value, color }: any) {
   const colors: any = {
-    blue: 'from-blue-500 to-cyan-400',
-    green: 'from-green-500 to-emerald-400',
-    red: 'from-red-500 to-pink-400',
-    yellow: 'from-yellow-500 to-orange-400',
-    purple: 'from-purple-500 to-pink-400',
+    blue: "from-blue-500 to-cyan-400",
+    green: "from-green-500 to-emerald-400",
+    red: "from-red-500 to-pink-400",
+    yellow: "from-yellow-500 to-orange-400",
+    purple: "from-purple-500 to-pink-400",
   };
 
   return (
-    <div className={`bg-gradient-to-r ${colors[color]} rounded-xl p-4 text-center`}>
+    <div
+      className={`bg-gradient-to-r ${colors[color]} rounded-xl p-4 text-center`}
+    >
       <div className="text-3xl font-bold text-white">{value}</div>
       <div className="text-sm text-white/90 mt-1">{label}</div>
     </div>
@@ -744,16 +784,22 @@ function StatBadge({ label, value, color }: any) {
 
 function ActivityRow({ icon, event, user, time, ip, severity }: any) {
   return (
-    <div className={`flex items-center justify-between p-4 rounded-xl border-l-4 ${
-      severity === 'high' ? 'border-red-500 bg-red-500/10' :
-      severity === 'medium' ? 'border-yellow-500 bg-yellow-500/10' :
-      'border-green-500 bg-green-500/10'
-    }`}>
+    <div
+      className={`flex items-center justify-between p-4 rounded-xl border-l-4 ${
+        severity === "high"
+          ? "border-red-500 bg-red-500/10"
+          : severity === "medium"
+            ? "border-yellow-500 bg-yellow-500/10"
+            : "border-green-500 bg-green-500/10"
+      }`}
+    >
       <div className="flex items-center space-x-4">
         <span className="text-3xl">{icon}</span>
         <div>
           <div className="font-semibold text-white">{event}</div>
-          <div className="text-sm text-white/60">{user} • {ip}</div>
+          <div className="text-sm text-white/60">
+            {user} • {ip}
+          </div>
         </div>
       </div>
       <div className="text-sm text-white/60">{time}</div>
@@ -764,7 +810,10 @@ function ActivityRow({ icon, event, user, time, ip, severity }: any) {
 function LoginActivityChart() {
   return (
     <div className="h-64 flex items-end justify-between space-x-2">
-      {[45, 52, 48, 65, 58, 72, 68, 85, 78, 92, 88, 95, 82, 98, 87, 100, 94, 88, 92, 85, 89, 93, 97, 91].map((height, i) => (
+      {[
+        45, 52, 48, 65, 58, 72, 68, 85, 78, 92, 88, 95, 82, 98, 87, 100, 94, 88,
+        92, 85, 89, 93, 97, 91,
+      ].map((height, i) => (
         <div key={i} className="flex-1 flex flex-col justify-end group">
           <div
             className="bg-gradient-to-t from-purple-600 to-pink-400 rounded-t-lg group-hover:from-purple-500 group-hover:to-pink-300 transition cursor-pointer"
@@ -778,11 +827,36 @@ function LoginActivityChart() {
 
 function UserRoleChart() {
   const roles = [
-    { name: 'Owner', count: 12, percentage: 5, color: 'from-purple-500 to-pink-400' },
-    { name: 'Admin', count: 45, percentage: 18, color: 'from-blue-500 to-cyan-400' },
-    { name: 'Manager', count: 78, percentage: 31, color: 'from-cyan-500 to-teal-400' },
-    { name: 'Staff', count: 95, percentage: 38, color: 'from-green-500 to-emerald-400' },
-    { name: 'Accountant', count: 20, percentage: 8, color: 'from-yellow-500 to-orange-400' },
+    {
+      name: "Owner",
+      count: 12,
+      percentage: 5,
+      color: "from-purple-500 to-pink-400",
+    },
+    {
+      name: "Admin",
+      count: 45,
+      percentage: 18,
+      color: "from-blue-500 to-cyan-400",
+    },
+    {
+      name: "Manager",
+      count: 78,
+      percentage: 31,
+      color: "from-cyan-500 to-teal-400",
+    },
+    {
+      name: "Staff",
+      count: 95,
+      percentage: 38,
+      color: "from-green-500 to-emerald-400",
+    },
+    {
+      name: "Accountant",
+      count: 20,
+      percentage: 8,
+      color: "from-yellow-500 to-orange-400",
+    },
   ];
 
   return (
@@ -791,7 +865,9 @@ function UserRoleChart() {
         <div key={i}>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-white font-medium">{role.name}</span>
-            <span className="text-white/60">{role.count} users ({role.percentage}%)</span>
+            <span className="text-white/60">
+              {role.count} users ({role.percentage}%)
+            </span>
           </div>
           <div className="h-4 bg-white/10 rounded-full overflow-hidden">
             <div
@@ -807,14 +883,16 @@ function UserRoleChart() {
 
 function TimelineEvent({ time, event, user, details, ip, type }: any) {
   const colors = {
-    success: 'border-green-500 bg-green-500/10',
-    warning: 'border-yellow-500 bg-yellow-500/10',
-    error: 'border-red-500 bg-red-500/10',
-    info: 'border-blue-500 bg-blue-500/10',
+    success: "border-green-500 bg-green-500/10",
+    warning: "border-yellow-500 bg-yellow-500/10",
+    error: "border-red-500 bg-red-500/10",
+    info: "border-blue-500 bg-blue-500/10",
   };
 
   return (
-    <div className={`border-l-4 ${colors[type as keyof typeof colors]} rounded-lg p-4`}>
+    <div
+      className={`border-l-4 ${colors[type as keyof typeof colors]} rounded-lg p-4`}
+    >
       <div className="flex justify-between items-start mb-2">
         <div>
           <div className="font-semibold text-white">{event}</div>
@@ -830,21 +908,27 @@ function TimelineEvent({ time, event, user, details, ip, type }: any) {
 
 function ThreatCard({ severity, title, description, time, action }: any) {
   const colors = {
-    high: 'border-red-500 bg-red-500/10',
-    medium: 'border-yellow-500 bg-yellow-500/10',
-    low: 'border-blue-500 bg-blue-500/10',
+    high: "border-red-500 bg-red-500/10",
+    medium: "border-yellow-500 bg-yellow-500/10",
+    low: "border-blue-500 bg-blue-500/10",
   };
 
   return (
-    <div className={`border-l-4 ${colors[severity as keyof typeof colors]} rounded-lg p-4`}>
+    <div
+      className={`border-l-4 ${colors[severity as keyof typeof colors]} rounded-lg p-4`}
+    >
       <div className="flex justify-between items-start mb-2">
         <div>
           <div className="flex items-center space-x-2">
-            <span className={`px-2 py-0.5 text-xs font-bold rounded ${
-              severity === 'high' ? 'bg-red-500 text-white' :
-              severity === 'medium' ? 'bg-yellow-500 text-white' :
-              'bg-blue-500 text-white'
-            }`}>
+            <span
+              className={`px-2 py-0.5 text-xs font-bold rounded ${
+                severity === "high"
+                  ? "bg-red-500 text-white"
+                  : severity === "medium"
+                    ? "bg-yellow-500 text-white"
+                    : "bg-blue-500 text-white"
+              }`}
+            >
               {severity.toUpperCase()}
             </span>
             <span className="font-semibold text-white">{title}</span>
@@ -854,7 +938,8 @@ function ThreatCard({ severity, title, description, time, action }: any) {
         <div className="text-sm text-white/60">{time}</div>
       </div>
       <div className="text-sm text-white/70 mt-2">
-        <span className="text-green-400">Action: </span>{action}
+        <span className="text-green-400">Action: </span>
+        {action}
       </div>
     </div>
   );
@@ -883,13 +968,15 @@ function BlockedIPRow({ ip, reason, blocked, attempts }: any) {
 
 function SecurityMetric({ title, value, status, icon }: any) {
   const colors = {
-    success: 'from-green-500 to-emerald-400',
-    warning: 'from-yellow-500 to-orange-400',
-    error: 'from-red-500 to-pink-400',
+    success: "from-green-500 to-emerald-400",
+    warning: "from-yellow-500 to-orange-400",
+    error: "from-red-500 to-pink-400",
   };
 
   return (
-    <div className={`bg-gradient-to-r ${colors[status as keyof typeof colors]} rounded-xl p-6 text-white`}>
+    <div
+      className={`bg-gradient-to-r ${colors[status as keyof typeof colors]} rounded-xl p-6 text-white`}
+    >
       <div className="text-4xl mb-3">{icon}</div>
       <div className="text-sm opacity-90 mb-1">{title}</div>
       <div className="text-3xl font-bold">{value}</div>
@@ -903,17 +990,21 @@ function SecurityMetric({ title, value, status, icon }: any) {
 
 function WalletView() {
   const [isConfirming, setIsConfirming] = useState(false);
-  const [transferData, setTransferData] = useState(null);
+  const [transferData, setTransferData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [walletDetails, setWalletDetails] = useState<any>(null);
   const [transferHistory, setTransferHistory] = useState<any[]>([]);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [notificationStatus, setNotificationStatus] = useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) throw new Error('No auth token found');
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No auth token found");
         const [detailsRes, historyRes] = await Promise.all([
           adminApi.getWalletDetails(token),
           adminApi.getTransferHistory(token),
@@ -921,7 +1012,7 @@ function WalletView() {
         setWalletDetails(detailsRes.data);
         setTransferHistory(historyRes.data);
       } catch (err) {
-        console.error('Failed to fetch wallet data', err);
+        console.error("Failed to fetch wallet data", err);
       }
     };
     fetchData();
@@ -935,10 +1026,10 @@ function WalletView() {
   const handleNotifyAccountant = async () => {
     if (!txHash || !transferData) return;
 
-    setNotificationStatus('sending');
+    setNotificationStatus("sending");
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No auth token found');
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No auth token found");
 
       await adminApi.notifyAccountant(
         {
@@ -949,12 +1040,12 @@ function WalletView() {
           network: transferData.network,
           memo: transferData.memo,
         },
-        token
+        token,
       );
-      setNotificationStatus('sent');
+      setNotificationStatus("sent");
     } catch (err) {
-      setNotificationStatus('error');
-      console.error('Failed to send notification', err);
+      setNotificationStatus("error");
+      console.error("Failed to send notification", err);
     }
   };
 
@@ -965,15 +1056,15 @@ function WalletView() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No auth token found');
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No auth token found");
 
       const response = await adminApi.executeTransfer(transferData, token);
       setTxHash(response.data.tx_hash);
       setIsConfirming(false);
       setTransferData(null);
     } catch (err) {
-      setError('Failed to execute transfer');
+      setError("Failed to execute transfer");
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -985,8 +1076,15 @@ function WalletView() {
       {walletDetails && (
         <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
           <h3 className="text-xl font-bold text-white mb-2">Platform Wallet</h3>
-          <p className="text-white/80 text-sm">Address: <span className="font-mono">{walletDetails.address}</span></p>
-          <p className="text-white/80 text-sm">Balance: <span className="font-bold">{walletDetails.balance.toFixed(2)} {walletDetails.token}</span></p>
+          <p className="text-white/80 text-sm">
+            Address: <span className="font-mono">{walletDetails.address}</span>
+          </p>
+          <p className="text-white/80 text-sm">
+            Balance:{" "}
+            <span className="font-bold">
+              {walletDetails.balance.toFixed(2)} {walletDetails.token}
+            </span>
+          </p>
         </div>
       )}
 
@@ -998,15 +1096,34 @@ function WalletView() {
             <p className="text-white/80 text-sm mt-2">Transaction Hash:</p>
             <p className="text-white font-mono text-xs break-all">{txHash}</p>
             <div className="flex justify-center gap-4 mt-4">
-              <button onClick={() => setTxHash(null)} className="px-4 py-2 bg-white/10 rounded-lg">New Transfer</button>
-              {notificationStatus !== 'sent' && (
-                <button onClick={handleNotifyAccountant} disabled={notificationStatus === 'sending'} className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-400">
-                  {notificationStatus === 'sending' ? 'Sending...' : 'Email Accountant'}
+              <button
+                onClick={() => setTxHash(null)}
+                className="px-4 py-2 bg-white/10 rounded-lg"
+              >
+                New Transfer
+              </button>
+              {notificationStatus !== "sent" && (
+                <button
+                  onClick={handleNotifyAccountant}
+                  disabled={notificationStatus === "sending"}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-400"
+                >
+                  {notificationStatus === "sending"
+                    ? "Sending..."
+                    : "Email Accountant"}
                 </button>
               )}
             </div>
-            {notificationStatus === 'sent' && <p className="text-green-300 text-sm mt-2">Accountant notified successfully!</p>}
-            {notificationStatus === 'error' && <p className="text-red-400 text-sm mt-2">Failed to send notification.</p>}
+            {notificationStatus === "sent" && (
+              <p className="text-green-300 text-sm mt-2">
+                Accountant notified successfully!
+              </p>
+            )}
+            {notificationStatus === "error" && (
+              <p className="text-red-400 text-sm mt-2">
+                Failed to send notification.
+              </p>
+            )}
           </div>
         ) : (
           <TransferForm onSubmit={handleReviewTransfer} onCancel={() => {}} />
@@ -1019,19 +1136,45 @@ function WalletView() {
           <table className="w-full text-sm text-left text-white/80">
             <thead className="text-xs text-white/60 uppercase bg-white/5">
               <tr>
-                <th scope="col" className="px-6 py-3">Date</th>
-                <th scope="col" className="px-6 py-3">Recipient</th>
-                <th scope="col" className="px-6 py-3">Amount</th>
-                <th scope="col" className="px-6 py-3">Tx Hash</th>
+                <th scope="col" className="px-6 py-3">
+                  Date
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Recipient
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Amount
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Tx Hash
+                </th>
               </tr>
             </thead>
             <tbody>
               {transferHistory.map((tx) => (
-                <tr key={tx.id} className="border-b border-white/10 hover:bg-white/5">
-                  <td className="px-6 py-4">{new Date(tx.createdAt).toLocaleString()}</td>
-                  <td className="px-6 py-4 font-mono text-xs">{tx.details.recipient}</td>
-                  <td className="px-6 py-4">{tx.details.amount} {tx.details.token}</td>
-                  <td className="px-6 py-4 font-mono text-xs"><a href={`https://solscan.io/tx/${tx.details.signature}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{tx.details.signature.substring(0, 20)}...</a></td>
+                <tr
+                  key={tx.id}
+                  className="border-b border-white/10 hover:bg-white/5"
+                >
+                  <td className="px-6 py-4">
+                    {new Date(tx.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 font-mono text-xs">
+                    {tx.details.recipient}
+                  </td>
+                  <td className="px-6 py-4">
+                    {tx.details.amount} {tx.details.token}
+                  </td>
+                  <td className="px-6 py-4 font-mono text-xs">
+                    <a
+                      href={`https://solscan.io/tx/${tx.details.signature}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:underline"
+                    >
+                      {tx.details.signature.substring(0, 20)}...
+                    </a>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1039,18 +1182,40 @@ function WalletView() {
         </div>
       </div>
 
-      <Modal isOpen={isConfirming} onClose={() => setIsConfirming(false)} title="Confirm Transfer">
+      <Modal
+        isOpen={isConfirming}
+        onClose={() => setIsConfirming(false)}
+        title="Confirm Transfer"
+      >
         {transferData && (
           <div className="space-y-4 text-white">
-            <p><strong>Recipient:</strong> {transferData.recipient}</p>
-            <p><strong>Amount:</strong> {transferData.amount} {transferData.token}</p>
-            <p><strong>Network:</strong> {transferData.network}</p>
-            <p><strong>Memo:</strong> {transferData.memo}</p>
+            <p>
+              <strong>Recipient:</strong> {transferData.recipient}
+            </p>
+            <p>
+              <strong>Amount:</strong> {transferData.amount}{" "}
+              {transferData.token}
+            </p>
+            <p>
+              <strong>Network:</strong> {transferData.network}
+            </p>
+            <p>
+              <strong>Memo:</strong> {transferData.memo}
+            </p>
             {error && <p className="text-red-500">{error}</p>}
             <div className="flex justify-end gap-4 pt-4">
-              <button onClick={() => setIsConfirming(false)} className="px-4 py-2 bg-slate-600 rounded-lg">Cancel</button>
-              <button onClick={handleConfirmTransfer} disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-400">
-                {isSubmitting ? 'Submitting...' : 'Confirm & Send'}
+              <button
+                onClick={() => setIsConfirming(false)}
+                className="px-4 py-2 bg-slate-600 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmTransfer}
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:bg-blue-400"
+              >
+                {isSubmitting ? "Submitting..." : "Confirm & Send"}
               </button>
             </div>
           </div>
@@ -1073,12 +1238,12 @@ function SettingRow({ label, description, enabled }: any) {
       </div>
       <button
         className={`relative w-14 h-8 rounded-full transition ${
-          enabled ? 'bg-green-500' : 'bg-gray-600'
+          enabled ? "bg-green-500" : "bg-gray-600"
         }`}
       >
         <div
           className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-            enabled ? 'translate-x-6' : ''
+            enabled ? "translate-x-6" : ""
           }`}
         ></div>
       </button>
@@ -1087,6 +1252,6 @@ function SettingRow({ label, description, enabled }: any) {
 }
 
 export default withRoleGuard(AdminConsolePage, [
-  UserRole.FACILITY_ADMIN,
-  UserRole.SUPER_ADMIN,
+  "FACILITY_ADMIN",
+  "SUPER_ADMIN",
 ]);

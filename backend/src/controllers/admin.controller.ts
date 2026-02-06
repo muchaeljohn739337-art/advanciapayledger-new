@@ -1,7 +1,8 @@
-import { Request, Response } from 'express';
-import { prisma } from '../utils/prisma';
-import { hashPassword } from '../utils/encryption';
-import { logger } from '../utils/logger';
+import { Request, Response } from "express";
+import { prisma } from "../utils/prisma";
+import { hashPassword } from "../utils/encryption";
+import { logger } from "../utils/logger";
+import { UserRole } from "@prisma/client";
 
 class AdminController {
   async createAdmin(req: Request, res: Response) {
@@ -9,13 +10,15 @@ class AdminController {
       const { email, password, firstName, lastName } = req.body;
 
       if (!email || !password || !firstName || !lastName) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        return res.status(400).json({ error: "Missing required fields" });
       }
 
       const existingUser = await prisma.user.findUnique({ where: { email } });
 
       if (existingUser) {
-        return res.status(400).json({ error: 'User with this email already exists' });
+        return res
+          .status(400)
+          .json({ error: "User with this email already exists" });
       }
 
       const hashedPassword = await hashPassword(password);
@@ -26,7 +29,7 @@ class AdminController {
           passwordHash: hashedPassword,
           firstName,
           lastName,
-          role: 'ADMIN',
+          role: UserRole.SUPER_ADMIN,
           isActive: true,
         },
         select: {
@@ -41,8 +44,8 @@ class AdminController {
       logger.info(`Admin user created: ${email}`);
       res.status(201).json(adminUser);
     } catch (error) {
-      logger.error('Error creating admin user:', error);
-      res.status(500).json({ error: 'Failed to create admin user' });
+      logger.error("Error creating admin user:", error);
+      res.status(500).json({ error: "Failed to create admin user" });
     }
   }
 }

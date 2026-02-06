@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -17,12 +17,12 @@ interface DebitCardFormProps {
   isMedicalExpense?: boolean;
 }
 
-export default function DebitCardForm({ 
-  onPaymentSuccess, 
-  onPaymentError, 
-  amount, 
+export default function DebitCardForm({
+  onPaymentSuccess,
+  onPaymentError,
+  amount,
   description,
-  isMedicalExpense = true 
+  isMedicalExpense = true,
 }: DebitCardFormProps) {
   const [formData, setFormData] = useState({
     cardNumber: "",
@@ -31,7 +31,7 @@ export default function DebitCardForm({
     cardholderName: "",
     billingZip: "",
     pin: "",
-    planType: "" as "HSA" | "FSA" | ""
+    planType: "" as "HSA" | "FSA" | "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -41,13 +41,13 @@ export default function DebitCardForm({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
     const matches = v.match(/\d{4,16}/g);
-    const match = matches && matches[0] || "";
+    const match = (matches && matches[0]) || "";
     const parts = [];
     for (let i = 0, len = match.length; i < len; i += 4) {
       parts.push(match.substring(i, i + 4));
@@ -89,25 +89,26 @@ export default function DebitCardForm({
         cardholderName: formData.cardholderName,
         billingZip: formData.billingZip,
         ...(usePin && { pin: formData.pin }),
-        ...(cardType !== "DEBIT" && { planType: cardType })
+        ...(cardType !== "DEBIT" && { planType: cardType }),
       };
 
-      const endpoint = cardType === "DEBIT" 
-        ? "/api/debit-cards/process"
-        : "/api/debit-cards/process-hsafsa";
+      const endpoint =
+        cardType === "DEBIT"
+          ? "/api/debit-cards/process"
+          : "/api/debit-cards/process-hsafsa";
 
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           amount,
           description,
           cardData,
-          isMedicalExpense
-        })
+          isMedicalExpense,
+        }),
       });
 
       const result = await response.json();
@@ -127,24 +128,31 @@ export default function DebitCardForm({
   const getProcessingFee = () => {
     if (!fees) return 0;
     switch (cardType) {
-      case "DEBIT": return fees.fees.DEBIT_CARD;
-      case "HSA": return fees.fees.HSA_CARD;
-      case "FSA": return fees.fees.FSA_CARD;
-      default: return 0;
+      case "DEBIT":
+        return fees.fees.DEBIT_CARD;
+      case "HSA":
+        return fees.fees.HSA_CARD;
+      case "FSA":
+        return fees.fees.FSA_CARD;
+      default:
+        return 0;
     }
   };
 
   const getSettlementDays = () => {
     switch (cardType) {
-      case "DEBIT": return 2;
+      case "DEBIT":
+        return 2;
       case "HSA":
-      case "FSA": return 1;
-      default: return 5;
+      case "FSA":
+        return 1;
+      default:
+        return 5;
     }
   };
 
   // Fetch fees on mount
-  React.useEffect(() => {
+  useEffect(() => {
     fetchFees();
   }, [amount]);
 
@@ -195,7 +203,9 @@ export default function DebitCardForm({
             </div>
             <div className="flex items-center space-x-2 mt-2">
               <Clock className="h-4 w-4 text-blue-600" />
-              <span className="text-sm">Settlement: {getSettlementDays()} business days</span>
+              <span className="text-sm">
+                Settlement: {getSettlementDays()} business days
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -206,7 +216,11 @@ export default function DebitCardForm({
         <Alert>
           <CheckCircle className="h-4 w-4" />
           <AlertDescription>
-            {cardType === "HSA" ? "Health Savings Account" : "Flexible Spending Account"} cards can only be used for qualified medical expenses. This transaction will be validated accordingly.
+            {cardType === "HSA"
+              ? "Health Savings Account"
+              : "Flexible Spending Account"}{" "}
+            cards can only be used for qualified medical expenses. This
+            transaction will be validated accordingly.
           </AlertDescription>
         </Alert>
       )}
@@ -216,7 +230,9 @@ export default function DebitCardForm({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <span>💳</span>
-            <span>{cardType === "DEBIT" ? "Debit Card" : cardType} Payment</span>
+            <span>
+              {cardType === "DEBIT" ? "Debit Card" : cardType} Payment
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -230,7 +246,12 @@ export default function DebitCardForm({
                 type="text"
                 placeholder="1234 5678 9012 3456"
                 value={formatCardNumber(formData.cardNumber)}
-                onChange={(e) => setFormData(prev => ({ ...prev, cardNumber: e.target.value.replace(/\s/g, "") }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    cardNumber: e.target.value.replace(/\s/g, ""),
+                  }))
+                }
                 maxLength={19}
                 required
               />
@@ -246,7 +267,12 @@ export default function DebitCardForm({
                   type="text"
                   placeholder="MM/YY"
                   value={formatExpiryDate(formData.expiryDate)}
-                  onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value.replace(/\D/g, "") }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      expiryDate: e.target.value.replace(/\D/g, ""),
+                    }))
+                  }
                   maxLength={5}
                   required
                 />
@@ -305,7 +331,9 @@ export default function DebitCardForm({
                     checked={usePin}
                     onChange={(e) => setUsePin(e.target.checked)}
                   />
-                  <Label htmlFor="usePin">Use PIN for additional security</Label>
+                  <Label htmlFor="usePin">
+                    Use PIN for additional security
+                  </Label>
                 </div>
                 {usePin && (
                   <Input
@@ -322,12 +350,10 @@ export default function DebitCardForm({
             )}
 
             {/* Submit Button */}
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-            >
-              {loading ? "Processing..." : `Pay $${(amount + getProcessingFee()).toFixed(2)}`}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading
+                ? "Processing..."
+                : `Pay $${(amount + getProcessingFee()).toFixed(2)}`}
             </Button>
           </form>
         </CardContent>
@@ -337,7 +363,9 @@ export default function DebitCardForm({
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Your payment information is encrypted and secure. Debit cards offer lower processing fees and faster settlement times compared to credit cards.
+          Your payment information is encrypted and secure. Debit cards offer
+          lower processing fees and faster settlement times compared to credit
+          cards.
         </AlertDescription>
       </Alert>
     </div>

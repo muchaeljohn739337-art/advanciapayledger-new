@@ -9,6 +9,7 @@ export interface TenantRequest extends Request {
     id: string;
     name: string;
     subdomain: string;
+    domain?: string | null;
     status: string;
     plan: string;
     settings: Record<string, unknown>;
@@ -43,6 +44,7 @@ export const tenantMiddleware = async (
         id: true,
         name: true,
         subdomain: true,
+        domain: true,
         status: true,
         plan: true,
         settings: true,
@@ -68,12 +70,19 @@ export const tenantMiddleware = async (
     }
 
     // Attach tenant to request
-    req.tenant = tenant;
+    req.tenant = {
+      id: tenant.id,
+      name: tenant.name,
+      subdomain: tenant.subdomain,
+      domain: tenant.domain,
+      status: tenant.status,
+      plan: tenant.plan,
+      settings: (tenant.settings as Record<string, unknown>) || {},
+    };
     req.tenantId = tenant.id;
 
     // Add tenant context to logs
-    logger.addContext("tenantId", tenant.id);
-    logger.addContext("tenantName", tenant.name);
+    logger.info(`Tenant context: ${tenant.id} - ${tenant.name}`);
 
     next();
   } catch (error) {

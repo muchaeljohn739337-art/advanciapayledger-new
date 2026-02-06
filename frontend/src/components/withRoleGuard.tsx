@@ -1,6 +1,16 @@
-import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { UserRole } from '../types/user';
+"use client";
+
+import React from "react";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Role type matching the User role type from lib/auth
+type UserRole =
+  | "SUPER_ADMIN"
+  | "FACILITY_ADMIN"
+  | "FACILITY_STAFF"
+  | "BILLING_MANAGER"
+  | "PATIENT"
+  | "SUPPORT_AGENT";
 
 interface WithRoleGuardProps {
   children: React.ReactNode;
@@ -11,7 +21,7 @@ interface WithRoleGuardProps {
 export function withRoleGuard<P extends object>(
   Component: React.ComponentType<P>,
   allowedRoles: UserRole[],
-  fallback?: React.ReactNode
+  fallback?: React.ReactNode,
 ) {
   return function GuardedComponent(props: P) {
     const { user, loading } = useAuth();
@@ -28,7 +38,7 @@ export function withRoleGuard<P extends object>(
       return fallback || <UnauthorizedPage />;
     }
 
-    if (!allowedRoles.includes(user.role)) {
+    if (!allowedRoles.includes(user.role as UserRole)) {
       return fallback || <UnauthorizedPage />;
     }
 

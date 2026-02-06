@@ -51,7 +51,13 @@ export class AuthController {
       );
 
       await emailIntegrationService.sendVerificationEmail(
-        user,
+        {
+          id: user.id,
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
         verificationToken,
       );
 
