@@ -175,7 +175,7 @@ jobs:
           output-file: sbom.spdx.json
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v6
         with:
           name: sbom
           path: sbom.spdx.json
